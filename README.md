@@ -5,7 +5,7 @@
 ## 功能介紹
 1. 選取區塊：使用者可以選取網頁中任何想要生成心智圖的內容區塊。
 2. AI 生成 mermaid：選取內容後，AI 會自動生成 mermaid 語法來繪製心智圖。
-3. 即時更新：AI 生成的 mermaid 內容可能不符合標準，尤其是在括號 ()、[]、{} 內部不應再出現括號。使用者可手動調整 mermaid 語法，即時更新心智圖。
+3. 即時更新：AI 生成的 mermaid 內容可能不符合標準，使用者可手動調整 mermaid 語法，即時更新心智圖。
 4. 互動操作：心智圖支援拖曳移動及滾輪縮放。
 5. 下載 SVG：提供將心智圖下載為 SVG 格式的功能。
 6. 產生摘要：提供摘要比對脈絡
@@ -25,7 +25,7 @@ This is a mind map generator tool that uses Groq AI. Before using it, you must f
 ## Features
 1. Block Selection: Users can select any content block from the webpage they want to create a mind map for.
 2. AI-Generated Mermaid: After selecting the content, AI generates the mermaid syntax to display the mind map.
-3. Live Updates: AI-generated mermaid syntax may not always meet the standards, especially when nested parentheses () , [], {} occur inside other parentheses. Users can manually adjust the mermaid syntax to update the mind map in real-time.
+3. Live Updates: AI-generated mermaid syntax may not always meet the standards. Users can manually adjust the mermaid syntax to update the mind map in real-time.
 4. Interactive: Mind maps support drag-and-drop movement and zoom in/out using the mouse wheel.
 5. Download as SVG: The tool provides an option to download the mind map as an SVG file.
 6. Summary: Provide summary comparison
