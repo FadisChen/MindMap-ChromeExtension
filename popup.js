@@ -208,7 +208,7 @@ async function generateResponse(content) {
         if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
             generatedResponse = generatedResponse.substring(startIndex + 10, endIndex).trim();
         }
-
+        generatedResponse = convertToFullWidth(generatedResponse);
         document.getElementById('mermaidCode').value = generatedResponse;
         
         renderMindmap(generatedResponse);
@@ -319,6 +319,42 @@ function downloadMindmap() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+}
+
+//去除str裡的雙引號，將括號內的括號轉全形
+function convertToFullWidth(str) {
+    str = str.replace(/"/g, '');
+    const brackets = {
+        '[': '［',
+        ']': '］',
+        '(': '（',
+        ')': '）',
+        '{': '｛',
+        '}': '｝'
+    };
+
+    function convert(s) {
+        const stack = [];
+        const result = s.split('');
+
+        for (let i = 0; i < s.length; i++) {
+            if (['[', '(', '{'].includes(s[i])) {
+                stack.push({ char: s[i], index: i });
+            } else if ([']', ')', '}'].includes(s[i])) {
+                if (stack.length > 0) {
+                    const open = stack.pop();
+                    if (stack.length > 0) {
+                        result[open.index] = brackets[open.char];
+                        result[i] = brackets[s[i]];
+                    }
+                }
+            }
+        }
+
+        return result.join('');
+    }
+
+    return convert(str);
 }
 
 // 添加這個監聽器來處理來自background.js的消息
