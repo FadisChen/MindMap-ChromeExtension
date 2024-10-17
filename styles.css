@@ -96,6 +96,11 @@ button:hover {
     border-radius: 4px;
     position: relative;
     margin-bottom: 16px;
+    cursor: grab;
+}
+
+#mindmapContainer:active {
+    cursor: grabbing;
 }
 
 #mindmapContainer svg {
