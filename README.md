@@ -8,6 +8,7 @@
 ### 即時更新：AI 生成的 mermaid 內容可能不符合標準，尤其是在括號 ()、[]、{} 內部不應再出現括號。使用者可手動調整 mermaid 語法，即時更新心智圖。
 ### 互動操作：心智圖支援拖曳移動及滾輪縮放。
 ### 下載 SVG：提供將心智圖下載為 SVG 格式的功能。
+### 產生摘要：提供摘要比對脈絡
 
 ## 使用步驟
 ### 取得 Groq API Key。
@@ -27,6 +28,7 @@
 ### Live Updates: AI-generated mermaid syntax may not always meet the standards, especially when nested parentheses () , [], {} occur inside other parentheses. Users can manually adjust the mermaid syntax to update the mind map in real-time.
 ### Interactive: Mind maps support drag-and-drop movement and zoom in/out using the mouse wheel.
 ### Download as SVG: The tool provides an option to download the mind map as an SVG file.
+### Summary: Provide summary comparison
 
 ## Steps to Use
 ### Obtain a Groq API Key.
