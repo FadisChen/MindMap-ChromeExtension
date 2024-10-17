@@ -55,6 +55,7 @@ button:hover {
 
 #clearButton {
     margin-right: 8px;
+	display: none;
 }
 
 #clearButton, #settingsButton {
