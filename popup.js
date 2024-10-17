@@ -107,13 +107,20 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializePopup() {
-    chrome.storage.local.get(['capturedContent'], function(result) {
-        if (result.capturedContent) {
-            generateResponse(result.capturedContent);
+    chrome.storage.local.get(['mermaidCode', 'summary'], function(result) {
+        if (result.mermaidCode) {
+            document.getElementById('mermaidCode').value = result.mermaidCode;
+            renderMindmap(result.mermaidCode);
         } else {
-            console.log("No captured content found in storage");
             document.getElementById('mermaidCode').value = '';
             document.getElementById('mindmapContainer').innerHTML = '';
+        }
+
+        if (result.summary) {
+            document.getElementById('summaryText').textContent = result.summary;
+            document.getElementById('summaryContainer').style.display = 'block';
+        } else {
+            document.getElementById('summaryContainer').style.display = 'none';
         }
     });
 }
@@ -170,7 +177,7 @@ async function generateResponse(content) {
         if (!apiKey) {
             throw new Error("API Key is not set");
         }
-
+        chrome.storage.local.set({mermaidCode: ""});
         const systemPrompt = "Generate a mindmap in Mermaid syntax based on user input. The mindmap should follow a left-to-right (LR) flow and be displayed in Traditional Chinese.\n\n# Steps\n\n1. **Understand User Input**: Parse and comprehend the user's input to determine the main topics and subtopics for the mindmap.\n2. **Structure the Mindmap**: Organize the input into a hierarchy that represents a mindmap, identifying connections between nodes.\n3. **Translate Elements**: Ensure that all elements are translated into Traditional Chinese, if they are not already.\n4. **Format in Mermaid Syntax**: Use the Mermaid syntax for creating a graph with \"graph LR\" to arrange nodes from left to right.\n\n# Output Format\n\n- Provide the output as a Mermaid code snippet structured for a left-to-right mindmap.\n- Ensure the syntax aligns with Mermaid's requirements for a graph representation.\n\n# Examples\n\n**Input**: 數位行銷 -> 社交媒體, 電子郵件, 內容行銷; 社交媒體 -> 臉書, 推特; 電子郵件 -> 活動推廣  \n**Output**:  \n```\ngraph LR  \n    A[數位行銷] --> B[社交媒體]  \n    A --> C[電子郵件]  \n    A --> D[內容行銷]  \n    B --> E[臉書]  \n    B --> F[推特]  \n    C --> G[活動推廣]  \n```\n\n*(Real-world examples should be more complex and include additional subtopics as necessary.)*\n\n# Notes\n\n- Confirm that all graph nodes and labels are in Traditional Chinese.\n- Double-check Mermaid syntax for accuracy to ensure correct rendering.#zh-TW";
         const userPrompt = "請根據以下文章內容<context>生成一個mindmap：\n\n<context>\n\n" + content + "\n\n</context>\n\n請使用mermaid語法生成mindmap，不要包含任何其他解釋或說明。以繁體中文顯示。#zh-TW";
 
@@ -217,6 +224,9 @@ async function generateResponse(content) {
         generatedResponse = convertToFullWidth(generatedResponse);
         document.getElementById('mermaidCode').value = generatedResponse;
         
+        // 保存 mermaid 代碼到 localStorage
+        chrome.storage.local.set({mermaidCode: generatedResponse});
+
         renderMindmap(generatedResponse);
 
         // 在生成心智圖後呼叫生成摘要的函數
@@ -230,6 +240,7 @@ async function generateResponse(content) {
 // 新增生成摘要的函數
 async function generateSummary(content) {
     try {
+        chrome.storage.local.set({summary: ""});
         const systemPrompt = `根據提供的內容生成摘要，摘要需以繁體中文呈現，捕捉內容的主要觀點和關鍵信息，並控制在150至250字之間。
 
                             # Steps
@@ -305,6 +316,9 @@ async function generateSummary(content) {
         if (summary === "") {
             throw new Error("No content generated for summary");
         }
+
+        // 保存摘要到 localStorage
+        chrome.storage.local.set({summary: summary});
 
         // 顯示摘要容器
         document.getElementById('summaryContainer').style.display = 'block';
