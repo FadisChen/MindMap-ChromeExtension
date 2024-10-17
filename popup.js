@@ -4,6 +4,17 @@ let scale = 1;
 let isDragging = false;
 let startX, startY;
 
+// 在文件開頭添加這個函數
+function handleCapturedContent() {
+  chrome.storage.local.get(['capturedContent'], function(result) {
+    if (result.capturedContent) {
+      generateResponse(result.capturedContent);
+      // 清除存儲的內容,以便下次使用
+      chrome.storage.local.remove('capturedContent');
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const captureButton = document.getElementById('captureButton');
     const clearButton = document.getElementById('clearButton');
@@ -85,6 +96,8 @@ document.addEventListener('DOMContentLoaded', function() {
     mindmapContainer.addEventListener('wheel', handleWheel);
 
     downloadButton.addEventListener('click', downloadMindmap);
+
+    handleCapturedContent(); // 添加這行
 });
 
 function initializePopup() {
@@ -236,8 +249,9 @@ function downloadMindmap() {
     URL.revokeObjectURL(url);
 }
 
+// 添加這個監聽器來處理來自background.js的消息
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request.action === "reloadContent") {
-        initializePopup();
+        handleCapturedContent();
     }
 });
