@@ -230,7 +230,22 @@ async function generateResponse(content) {
 // 新增生成摘要的函數
 async function generateSummary(content) {
     try {
-        const systemPrompt = "你是一個專業的文章摘要生成器。請根據提供的內容生成摘要，以繁體中文呈現。摘要應該捕捉內容的主要觀點和關鍵信息，長度控制在150~250字左右。#zh-TW";
+        const systemPrompt = `根據提供的內容生成摘要，摘要需以繁體中文呈現，捕捉內容的主要觀點和關鍵信息，並控制在150至250字之間。
+
+                            # Steps
+                            1. 閱讀並理解提供的內容，識別其主要觀點、論點和關鍵信息。
+                            2. 確保提取的信息足以反映內容的核心思想。
+                            3. 構建摘要，將關鍵資訊和主要觀點清晰有條理地呈現。
+                            4. 校對摘要，確保字數在150至250字之間，語言流暢自然。
+
+                            # Output Format
+                            - 長度：150至250字。
+                            - 語言：繁體中文。
+                            - 結構：突出內容的主要觀點和關鍵信息。
+
+                            # Notes
+                            - 當內容複雜且信息量大時，優先考慮最重要的觀點和資訊。
+                            - 確保摘要留有完整性和連貫性，不丟失關鍵細節。#zh-TW`;
         const userPrompt = "請為以下內容<context>生成繁體中文摘要：\n\n<context>\n\n" + content + "\n\n</context>\n\n#zh-TW";
 
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
