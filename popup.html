@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心智圖生成器</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="mermaid.min.js"></script>
+</head>
+<body>
+    <div class="button-container">
+        <button id="captureButton">擷取內容</button>
+        <button id="clearButton">X</button>
+        <button id="settingsButton">🔑</button>
+    </div>
+    <div id="settingsContainer" style="display: none;">
+        <input type="password" id="apiKeyInput" placeholder="請輸入 Groq API Key">
+        <input type="text" id="modelInput" placeholder="請輸入模型名稱">
+        <button id="saveSettings">保存設置</button>
+    </div>
+    <textarea id="mermaidCode" placeholder="LLM 生成的回應將在這裡顯示"></textarea>
+    <div id="mindmapContainer"></div>
+    <button id="downloadButton">下載圖片</button>
+    <script src="popup.js"></script>
+</body>
+</html>
