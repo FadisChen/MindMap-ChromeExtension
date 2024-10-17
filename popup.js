@@ -372,5 +372,8 @@ function convertToFullWidth(str) {
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request.action === "reloadContent") {
         handleCapturedContent();
+    } else if (request.action === "captureCancelled") {
+        console.log("Capture cancelled");
+        // 可以在這裡添加一些視覺反饋，例如顯示一個通知
     }
 });

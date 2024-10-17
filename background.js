@@ -23,5 +23,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     } else if (request.action === "contentCaptured") {
         chrome.action.openPopup();
         chrome.runtime.sendMessage({action: "reloadContent"});
+    } else if (request.action === "captureCancelled") {
+        chrome.action.openPopup();
+        chrome.runtime.sendMessage({action: "captureCancelled"});
     }
 });

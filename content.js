@@ -2,15 +2,12 @@ let captureMode = false;
 let originalStyles = new Map();
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-    //console.log("Message received in content script:", request);
     if (request.action === "startCapture") {
         captureMode = true;
         document.body.style.cursor = 'pointer';
-        //console.log("Capture mode activated");
         
-        // 添加視覺提示
         let notification = document.createElement('div');
-        notification.textContent = '請點擊要擷取的內容';
+        notification.textContent = '請點擊要擷取的內容（按 ESC 取消）';
         notification.style.cssText = `
             position: fixed;
             top: 10px;
@@ -24,15 +21,32 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         `;
         document.body.appendChild(notification);
         
-        // 5秒後自動移除提示
         setTimeout(() => {
             document.body.removeChild(notification);
         }, 5000);
+
+        // 添加 ESC 鍵監聽器
+        document.addEventListener('keydown', handleEscKey);
     }
-    // 確保消息被正確處理
     sendResponse({received: true});
     return true;
 });
+
+// 新增 ESC 鍵處理函數
+function handleEscKey(e) {
+    if (e.key === 'Escape' && captureMode) {
+        cancelCapture();
+    }
+}
+
+// 新增取消擷取函數
+function cancelCapture() {
+    captureMode = false;
+    document.body.style.cursor = 'default';
+    restoreAllElements();
+    document.removeEventListener('keydown', handleEscKey);
+    chrome.runtime.sendMessage({action: "captureCancelled"});
+}
 
 document.addEventListener('mouseover', function(e) {
     if (captureMode) {
@@ -50,19 +64,15 @@ document.addEventListener('click', function(e) {
     if (captureMode) {
         e.preventDefault();
         let content = e.target.innerText;
-        //console.log("Captured content:", content);
         
-        // 使用 chrome.storage 來存儲擷取的內容
         chrome.storage.local.set({capturedContent: content}, function() {
-            //console.log("Content saved to storage");
-            // 發送一個消息到背景腳本，通知內容已被擷取
             chrome.runtime.sendMessage({action: "contentCaptured"});
         });
         
         captureMode = false;
         document.body.style.cursor = 'default';
         restoreAllElements();
-        //console.log("Capture mode deactivated");
+        document.removeEventListener('keydown', handleEscKey);
     }
 });
 
