@@ -17,7 +17,6 @@ function handleCapturedContent() {
 
 document.addEventListener('DOMContentLoaded', function() {
     const captureButton = document.getElementById('captureButton');
-    const clearButton = document.getElementById('clearButton');
     const settingsButton = document.getElementById('settingsButton');
     const settingsContainer = document.getElementById('settingsContainer');
     const apiKeyInput = document.getElementById('apiKeyInput');
@@ -26,6 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const mermaidCodeTextarea = document.getElementById('mermaidCode');
     const mindmapContainer = document.getElementById('mindmapContainer');
     const downloadButton = document.getElementById('downloadButton');
+    const editButton = document.getElementById('editButton');
 
     mermaid.initialize({ startOnLoad: true });
 
@@ -76,12 +76,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    clearButton.addEventListener('click', function() {
-        mermaidCodeTextarea.value = '';
-        mindmapContainer.innerHTML = '';
-        chrome.storage.local.remove('capturedContent');
-    });
-
     mermaidCodeTextarea.addEventListener('input', function() {
         renderMindmap(this.value);
     });
@@ -98,6 +92,18 @@ document.addEventListener('DOMContentLoaded', function() {
     downloadButton.addEventListener('click', downloadMindmap);
 
     handleCapturedContent(); // 添加這行
+
+    editButton.addEventListener('click', function() {
+        if (mermaidCodeTextarea.style.display === 'none') {
+            mermaidCodeTextarea.style.display = 'block';
+            editButton.textContent = '完成';
+        } else {
+            mermaidCodeTextarea.style.display = 'none';
+            editButton.textContent = '編輯';
+            // 重新渲染心智图
+            renderMindmap(mermaidCodeTextarea.value);
+        }
+    });
 });
 
 function initializePopup() {
@@ -181,7 +187,7 @@ async function generateResponse(content) {
                     { role: "user", content: userPrompt }
                 ],
                 temperature: 0.7,
-                max_tokens: 2048,
+                max_tokens: 8000,
                 top_p: 1,
                 stream: false,
                 stop: null
@@ -224,8 +230,8 @@ async function generateResponse(content) {
 // 新增生成摘要的函數
 async function generateSummary(content) {
     try {
-        const systemPrompt = "你是一個專業的文章摘要生成器。請根據提供的內容生成摘要，以繁體中文呈現。摘要應該捕捉內容的主要觀點和關鍵信息，長度控制在150~250字左右。";
-        const userPrompt = "請為以下內容<context>生成摘要：\n\n<context>\n\n" + content + "\n\n</context>\n\n";
+        const systemPrompt = "你是一個專業的文章摘要生成器。請根據提供的內容生成摘要，以繁體中文呈現。摘要應該捕捉內容的主要觀點和關鍵信息，長度控制在150~250字左右。#zh-TW";
+        const userPrompt = "請為以下內容<context>生成繁體中文摘要：\n\n<context>\n\n" + content + "\n\n</context>\n\n#zh-TW";
 
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -284,9 +290,14 @@ async function generateSummary(content) {
         if (summary === "") {
             throw new Error("No content generated for summary");
         }
+
+        // 顯示摘要容器
+        document.getElementById('summaryContainer').style.display = 'block';
     } catch (error) {
         console.error('Error generating summary:', error);
         document.getElementById('summaryText').textContent = `Error generating summary: ${error.message}. Please try again.`;
+        // 即使出錯也顯示摘要容器，以顯示錯誤信息
+        document.getElementById('summaryContainer').style.display = 'block';
     }
 }
 

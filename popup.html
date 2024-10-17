@@ -10,7 +10,6 @@
 <body>
     <div class="button-container">
         <button id="captureButton">擷取內容</button>
-        <button id="clearButton">X</button>
         <button id="settingsButton">🔑</button>
     </div>
     <div id="settingsContainer" style="display: none;">
@@ -18,12 +17,15 @@
         <input type="text" id="modelInput" placeholder="請輸入模型名稱">
         <button id="saveSettings">保存設置</button>
     </div>
-    <textarea id="mermaidCode" placeholder="LLM 生成的回應將在這裡顯示"></textarea>
     <div id="mindmapContainer"></div>
-    <button id="downloadButton">下載圖片</button>
-    <!-- 新增摘要區塊 -->
-    <div id="summaryContainer">
-        <h3>內容摘要</h3>
+    <textarea id="mermaidCode" placeholder="LLM 生成的Mermaid Code" style="display: none;"></textarea>
+    <div class="button-container">
+        <button id="editButton">編輯</button>
+        <button id="downloadButton">下載</button>
+    </div>
+    <!-- 新增摘要區塊，預設隱藏 -->
+    <div id="summaryContainer" style="display: none;">
+        <h3>摘要</h3>
         <p id="summaryText"></p>
     </div>
     <script src="popup.js"></script>
