@@ -181,7 +181,7 @@ async function generateResponse(content) {
                     { role: "user", content: userPrompt }
                 ],
                 temperature: 0.7,
-                max_tokens: 1024,
+                max_tokens: 2048,
                 top_p: 1,
                 stream: false,
                 stop: null
@@ -212,9 +212,81 @@ async function generateResponse(content) {
         document.getElementById('mermaidCode').value = generatedResponse;
         
         renderMindmap(generatedResponse);
+
+        // 在生成心智圖後呼叫生成摘要的函數
+        await generateSummary(content);
     } catch (error) {
         console.error('Error generating response:', error);
         document.getElementById('mermaidCode').value = `Error generating response: ${error.message}. Please try again.`;
+    }
+}
+
+// 新增生成摘要的函數
+async function generateSummary(content) {
+    try {
+        const systemPrompt = "你是一個專業的文章摘要生成器。請根據提供的內容生成摘要，以繁體中文呈現。摘要應該捕捉內容的主要觀點和關鍵信息，長度控制在150~250字左右。";
+        const userPrompt = "請為以下內容<context>生成摘要：\n\n<context>\n\n" + content + "\n\n</context>\n\n";
+
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userPrompt }
+                ],
+                temperature: 0.7,
+                max_tokens: 1024,
+                top_p: 1,
+                stream: true,
+                stop: null
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let summary = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+                    if (data === '[DONE]') {
+                        break;
+                    }
+                    try {
+                        const parsed = JSON.parse(data);
+                        if (parsed.choices && parsed.choices[0].delta && parsed.choices[0].delta.content) {
+                            summary += parsed.choices[0].delta.content;
+                            document.getElementById('summaryText').textContent = summary;
+                        }
+                    } catch (e) {
+                        console.error('Error parsing JSON:', e);
+                    }
+                }
+            }
+        }
+
+        if (summary === "") {
+            throw new Error("No content generated for summary");
+        }
+    } catch (error) {
+        console.error('Error generating summary:', error);
+        document.getElementById('summaryText').textContent = `Error generating summary: ${error.message}. Please try again.`;
     }
 }
 
