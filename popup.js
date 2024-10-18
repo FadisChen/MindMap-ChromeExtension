@@ -18,6 +18,7 @@ function handleCapturedContent() {
 document.addEventListener('DOMContentLoaded', function() {
     const captureButton = document.getElementById('captureButton');
     const settingsButton = document.getElementById('settingsButton');
+    const clearButton = document.getElementById('clearButton');
     const settingsContainer = document.getElementById('settingsContainer');
     const apiKeyInput = document.getElementById('apiKeyInput');
     const modelInput = document.getElementById('modelInput');
@@ -47,6 +48,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     settingsButton.addEventListener('click', function() {
         settingsContainer.style.display = settingsContainer.style.display === 'none' ? 'block' : 'none';
+    });
+
+    clearButton.addEventListener('click', function() {
+        mermaidCodeTextarea.value = '';
+        mindmapContainer.innerHTML = '';
+        document.getElementById('summaryText').textContent = '';
+        document.getElementById('summaryContainer').style.display = 'none';
+        chrome.storage.local.remove('mermaidCode');
+        chrome.storage.local.remove('summary');
     });
 
     saveSettingsButton.addEventListener('click', function() {
@@ -172,62 +182,89 @@ function applyZoom() {
     }
 }
 
+// 添加一個延遲函數
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function generateResponse(content) {
     try {
         if (!apiKey) {
             throw new Error("API Key is not set");
         }
-        chrome.storage.local.set({mermaidCode: ""});
-        const systemPrompt = "Generate a mindmap in Mermaid syntax based on user input. The mindmap should follow a left-to-right (LR) flow and be displayed in Traditional Chinese.\n\n# Steps\n\n1. **Understand User Input**: Parse and comprehend the user's input to determine the main topics and subtopics for the mindmap.\n2. **Structure the Mindmap**: Organize the input into a hierarchy that represents a mindmap, identifying connections between nodes.\n3. **Translate Elements**: Ensure that all elements are translated into Traditional Chinese, if they are not already.\n4. **Format in Mermaid Syntax**: Use the Mermaid syntax for creating a graph with \"graph LR\" to arrange nodes from left to right.\n\n# Output Format\n\n- Provide the output as a Mermaid code snippet structured for a left-to-right mindmap.\n- Ensure the syntax aligns with Mermaid's requirements for a graph representation.\n\n# Examples\n\n**Input**: 數位行銷 -> 社交媒體, 電子郵件, 內容行銷; 社交媒體 -> 臉書, 推特; 電子郵件 -> 活動推廣  \n**Output**:  \n```\ngraph LR  \n    A[數位行銷] --> B[社交媒體]  \n    A --> C[電子郵件]  \n    A --> D[內容行銷]  \n    B --> E[臉書]  \n    B --> F[推特]  \n    C --> G[活動推廣]  \n```\n\n*(Real-world examples should be more complex and include additional subtopics as necessary.)*\n\n# Notes\n\n- Confirm that all graph nodes and labels are in Traditional Chinese.\n- Double-check Mermaid syntax for accuracy to ensure correct rendering.#zh-TW";
-        const userPrompt = "請根據以下文章內容<context>生成一個mindmap：\n\n<context>\n\n" + content + "\n\n</context>\n\n請使用mermaid語法生成mindmap，不要包含任何其他解釋或說明。以繁體中文顯示。#zh-TW";
 
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: model,
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: userPrompt }
-                ],
-                temperature: 0.7,
-                max_tokens: 8000,
-                top_p: 1,
-                stream: false,
-                stop: null
-            })
-        });
+        const systemPrompt = "Generate a mindmap in Mermaid syntax based on user input. The mindmap should follow a left-to-right (LR) flow and be displayed in Traditional Chinese.\n\n# Steps\n\n1. **Understand User Input**: Parse and comprehend the user's input to determine the main topics and subtopics for the mindmap.\n2. **Structure the Mindmap**: Organize the input into a hierarchy that represents a mindmap, identifying connections between nodes.\n3. **Translate Elements**: Ensure that all elements are translated into Traditional Chinese, if they are not already.\n4. **Format in Mermaid Syntax**: Use the Mermaid syntax for creating a graph with \"graph LR\" to arrange nodes from left to right.\n\n# Output Format\n\n- Provide the output as a Mermaid code snippet structured for a left-to-right mindmap.\n- Ensure the syntax aligns with Mermaid's requirements for a graph representation.\n\n# Examples\n\n**Input**: 數位行銷 -> 社交媒體, 電子郵件, 內容行銷; 社交媒體 -> 臉書, 推特; 電子郵件 -> 活動推廣  \n**Output**:  \n```\ngraph LR  \n    A[數位行銷] --> B[社交媒體]  \n    A --> C[電子郵件]  \n    A --> D[內容行銷]  \n    B --> E[臉書]  \n    B --> F[推特]  \n    C --> G[活動推廣]  \n```\n\n*(Real-world examples should be more complex and include additional subtopics as necessary.)*\n\n# Notes\n\n- Confirm that all graph nodes and labels are in Traditional Chinese.\n- Double-check Mermaid syntax for accuracy to ensure correct rendering. Do not include the ```mermaid code fence in your response.\n- Only include the graph content, starting with 'graph LR'.\n#zh-TW";
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        let segments = [];
+        if (content.length > 3000) {
+            for (let i = 0; i < content.length; i += 2800) {
+                let end = Math.min(i + 3000, content.length);
+                segments.push(content.slice(i, end));
+            }
+        } else {
+            segments.push(content);
         }
 
-        const data = await response.json();
-        console.log("API response:", data);
+        let allResponses = [];
+        for (let i = 0; i < segments.length; i++) {
+            const segment = segments[i];
+            const userPrompt = `請根據以下文章內容<context>生成一個mindmap：\n\n<context>\n\n${segment}\n\n</context>\n\n請使用mermaid語法生成mindmap，不要包含任何其他解釋或說明。以繁體中文顯示。${i === 0 ? '' : '請繼續前一個段落的mindmap，不要重新開始，id命名以"' + i +'_"開頭。'}#zh-TW`;
 
-        if (!data.choices || data.choices.length === 0) {
-            throw new Error("No choices in API response");
+            if (i > 0) {
+                await delay(3000);
+            }
+
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: userPrompt }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 8000,
+                    top_p: 1,
+                    stream: false,
+                    stop: null
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("API response:", data);
+
+            if (!data.choices || data.choices.length === 0) {
+                throw new Error("No choices in API response");
+            }
+
+            let generatedResponse = data.choices[0].message.content.trim();
+            console.log("Generated response:", generatedResponse);
+
+            // 移除可能的額外說明文字和代碼塊標記
+            generatedResponse = generatedResponse.replace(/```mermaid\n?/, '').replace(/```\n?$/, '');
+
+            // 移除所有 "graph LR" 開頭（不僅僅是第一個段落之後的）
+            generatedResponse = generatedResponse.replace(/^graph LR\n?/gm, '');
+
+            allResponses.push(generatedResponse);
+
+            // 立即渲染當前的 mindmap
+            let currentMindmap = "graph LR\n" + allResponses.join("\n");
+            currentMindmap = convertToFullWidth(currentMindmap);
+            document.getElementById('mermaidCode').value = currentMindmap;
+            renderMindmap(currentMindmap);
+
+            // 保存當前的 mermaid 代碼到 localStorage
+            chrome.storage.local.set({mermaidCode: currentMindmap});
         }
-
-        let generatedResponse = data.choices[0].message.content;
-        console.log("Generated response:", generatedResponse);
-
-        // 移除可能的額外說明文字，只保留mermaid語法
-        const startIndex = generatedResponse.indexOf("```mermaid");
-        const endIndex = generatedResponse.lastIndexOf("```");
-        if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
-            generatedResponse = generatedResponse.substring(startIndex + 10, endIndex).trim();
-        }
-        generatedResponse = convertToFullWidth(generatedResponse);
-        document.getElementById('mermaidCode').value = generatedResponse;
-        
-        // 保存 mermaid 代碼到 localStorage
-        chrome.storage.local.set({mermaidCode: generatedResponse});
-
-        renderMindmap(generatedResponse);
 
         // 在生成心智圖後呼叫生成摘要的函數
         await generateSummary(content);
@@ -237,10 +274,8 @@ async function generateResponse(content) {
     }
 }
 
-// 新增生成摘要的函數
 async function generateSummary(content) {
     try {
-        chrome.storage.local.set({summary: ""});
         const systemPrompt = `根據提供的內容生成摘要，摘要需以繁體中文呈現，捕捉內容的主要觀點和關鍵信息，並控制在150至250字之間。
 
                             # Steps
@@ -257,75 +292,96 @@ async function generateSummary(content) {
                             # Notes
                             - 當內容複雜且信息量大時，優先考慮最重要的觀點和資訊。
                             - 確保摘要留有完整性和連貫性，不丟失關鍵細節。#zh-TW`;
-        const userPrompt = "請為以下內容<context>生成繁體中文摘要：\n\n<context>\n\n" + content + "\n\n</context>\n\n#zh-TW";
 
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: model,
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: userPrompt }
-                ],
-                temperature: 0.7,
-                max_tokens: 8000,
-                top_p: 1,
-                stream: true,
-                stop: null
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        let segments = [];
+        if (content.length > 3000) {
+            for (let i = 0; i < content.length; i += 2800) {
+                let end = Math.min(i + 3000, content.length);
+                segments.push(content.slice(i, end));
+            }
+        } else {
+            segments.push(content);
         }
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let summary = "";
+        let allSummaries = [];
+        for (let i = 0; i < segments.length; i++) {
+            const segment = segments[i];
+            const userPrompt = "請為以下內容<context>生成繁體中文摘要：\n\n<context>\n\n" + segment + "\n\n</context>\n\n#zh-TW";
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-                break;
+            if (i > 0) {
+                await delay(3000);
             }
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    const data = line.slice(6);
-                    if (data === '[DONE]') {
-                        break;
-                    }
-                    try {
-                        const parsed = JSON.parse(data);
-                        if (parsed.choices && parsed.choices[0].delta && parsed.choices[0].delta.content) {
-                            summary += parsed.choices[0].delta.content;
-                            document.getElementById('summaryText').textContent = summary;
+
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: userPrompt }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 8000,
+                    top_p: 1,
+                    stream: true,
+                    stop: null
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let summary = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    break;
+                }
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') {
+                            break;
                         }
-                    } catch (e) {
-                        console.error('Error parsing JSON:', e);
+                        try {
+                            const parsed = JSON.parse(data);
+                            if (parsed.choices && parsed.choices[0].delta && parsed.choices[0].delta.content) {
+                                summary += parsed.choices[0].delta.content;
+                                // 立即更新摘要顯示
+                                let currentSummary = allSummaries.join("\n\n") + (allSummaries.length > 0 ? "\n\n" : "") + summary;
+                                document.getElementById('summaryText').textContent = currentSummary;
+                                document.getElementById('summaryContainer').style.display = 'block';
+                            }
+                        } catch (e) {
+                            //console.error('Error parsing JSON:', e);
+                        }
                     }
                 }
             }
+
+            if (summary === "") {
+                throw new Error("No content generated for summary");
+            }
+
+            allSummaries.push(summary);
+
+            // 保存當前的摘要到 localStorage
+            let currentSummary = allSummaries.join("\n\n");
+            chrome.storage.local.set({summary: currentSummary});
         }
-
-        if (summary === "") {
-            throw new Error("No content generated for summary");
-        }
-
-        // 保存摘要到 localStorage
-        chrome.storage.local.set({summary: summary});
-
-        // 顯示摘要容器
-        document.getElementById('summaryContainer').style.display = 'block';
     } catch (error) {
         console.error('Error generating summary:', error);
         document.getElementById('summaryText').textContent = `Error generating summary: ${error.message}. Please try again.`;
-        // 即使出錯也顯示摘要容器，以顯示錯誤信息
         document.getElementById('summaryContainer').style.display = 'block';
     }
 }
