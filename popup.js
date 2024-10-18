@@ -256,7 +256,7 @@ async function generateResponse(content) {
                         { role: "user", content: userPrompt }
                     ],
                     temperature: 0.7,
-                    max_tokens: 8000,
+                    max_tokens: 1024,
                     top_p: 1,
                     stream: false,
                     stop: null
@@ -354,7 +354,7 @@ async function generateSummary(content) {
                         { role: "user", content: userPrompt }
                     ],
                     temperature: 0.7,
-                    max_tokens: 8000,
+                    max_tokens: 512,
                     top_p: 1,
                     stream: true,
                     stop: null
