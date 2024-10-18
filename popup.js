@@ -208,7 +208,36 @@ async function generateResponse(content) {
         let allResponses = [];
         for (let i = 0; i < segments.length; i++) {
             const segment = segments[i];
-            const userPrompt = `請根據以下文章內容<context>生成一個mindmap：\n\n<context>\n\n${segment}\n\n</context>\n\n請使用mermaid語法生成mindmap，不要包含任何其他解釋或說明。以繁體中文顯示。${i === 0 ? '' : '請繼續前一個段落的mindmap，不要重新開始，id命名以"' + i +'_"開頭。'}#zh-TW`;
+            const userPrompt = `根據以下文章內容<context>生成一個心智圖：
+            <context>
+            ${segment}
+            </context>
+
+            # Steps
+            1. 閱讀並理解上述文章內容，識別主要概念和子概念。
+            2. 使用Mermaid語法構建心智圖，以結構化方式展示概念和子概念。
+            3. Mermaid代碼中的ID應以"${i}_"開頭，例如"${i}_A"、"${i}_B"等。
+
+            # Output Format
+            - 僅輸出Mermaid語法格式的心智圖代碼。
+            - 不要包含任何其他說明或解釋。
+            - 確保所有文字為繁體中文。
+
+            # Notes
+            - 熟悉Mermaid語法結構，正確使用節點和連接線。
+            - 嚴格遵循ID命名規則以確保唯一性。
+            - 最終輸出應只有Mermaid語法片段，無需其他包裝或附加說明。
+
+            ${i === 0 ? '' : `請在以下現有的心智圖基礎上繼續擴展：
+
+            <existing_mindmap>
+            ${document.getElementById('mermaidCode').value}
+            </existing_mindmap>
+
+            注意：新增的節點ID必須以"${i}_"開頭，以避免與現有節點衝突。
+            不必輸出existing_mindmap裡的內容`}
+
+            #zh-TW`;
 
             if (i > 0) {
                 await delay(3000);
@@ -306,7 +335,7 @@ async function generateSummary(content) {
         let allSummaries = [];
         for (let i = 0; i < segments.length; i++) {
             const segment = segments[i];
-            const userPrompt = "請為以下內容<context>生成繁體中文摘要：\n\n<context>\n\n" + segment + "\n\n</context>\n\n#zh-TW";
+            const userPrompt = "請為以下內容<context>生繁體中文摘要：\n\n<context>\n\n" + segment + "\n\n</context>\n\n#zh-TW";
 
             if (i > 0) {
                 await delay(3000);
