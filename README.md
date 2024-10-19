@@ -9,6 +9,7 @@
 4. 互動操作：心智圖支援拖曳移動及滾輪縮放。
 5. 下載 SVG：提供將心智圖下載為 SVG 格式的功能。
 6. 產生摘要：提供摘要比對脈絡
+7. 讀取文檔：開啟docx或pdf檔
 
 ## 使用步驟
 1. 取得 Groq API Key。
@@ -29,6 +30,7 @@ This is a mind map generator tool that uses Groq AI. Before using it, you must f
 4. Interactive: Mind maps support drag-and-drop movement and zoom in/out using the mouse wheel.
 5. Download as SVG: The tool provides an option to download the mind map as an SVG file.
 6. Summary: Provide summary comparison
+7. Read File: Open docx, pdf file and get context.
 
 ## Steps to Use
 1. Obtain a Groq API Key.
