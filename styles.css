@@ -1,7 +1,7 @@
 body {
     font-family: 'Roboto', sans-serif;
     width: 400px;
-    padding: 16px;
+    padding: 8px 16px 16px 16px;
     margin: 0;
     background-color: #ffffff;
     box-sizing: border-box;
@@ -45,21 +45,36 @@ button:hover {
 .button-container {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin: 4px 0;
+    padding: 0 4px;
 }
 
-#captureButton {
-    flex-grow: 1;
-    margin-right: 8px;
+.emoji-button {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 2px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-#clearButton {
-    margin-right: 8px;
+.emoji-button:hover {
+    background: none;
 }
 
-#clearButton, #settingsButton {
-    width: 40px;
-    padding: 8px;
+.edit-button-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 4px;
+}
+
+#editButton {
+    padding: 4px 8px;
+    font-size: 14px;
 }
 
 #settingsContainer {
@@ -81,7 +96,7 @@ button:hover {
 #mermaidCode {
     width: calc(100% - 16px);
     height: 100px;
-    margin: 0 0 16px 0;
+    margin: 0 0 8px 0;
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
@@ -95,8 +110,9 @@ button:hover {
     border: 1px solid #ccc;
     border-radius: 4px;
     position: relative;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
     cursor: grab;
+    margin-top: 6px;
 }
 
 #mindmapContainer:active {
@@ -114,23 +130,9 @@ button:hover {
     pointer-events: none;
 }
 
-#downloadButton, #editButton {
-    width: calc(50% - 4px);
-}
-
-#zoomControls {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 8px;
-}
-
-#zoomControls button {
-    margin-left: 8px;
-}
-
 #summaryContainer {
-    display: none; /* 預設隱藏 */
-    margin-top: 20px;
+    display: none;
+    margin-top: 10px;
     padding: 10px;
     background-color: #f0f0f0;
     border-radius: 5px;
@@ -149,36 +151,30 @@ button:hover {
 
 /* 自定義滾動條樣式 */
 ::-webkit-scrollbar {
-    width: 8px;  /* 滾動條寬度 */
+    width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #f1f1f1;  /* 滾動條軌道顏色 */
+    background: #f1f1f1;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #888;  /* 滾動條滑塊顏色 */
+    background: #888;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #555;  /* 滾動條滑塊懸停時的顏色 */
+    background: #555;
 }
 
-/* 應用於整個popup頁面 */
 body {
-    scrollbar-width: thin;  /* Firefox */
-    scrollbar-color: #888 #f1f1f1;  /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
 }
 
-/* 應用於textarea */
 #mermaidCode {
-    scrollbar-width: thin;  /* Firefox */
-    scrollbar-color: #888 #f1f1f1;  /* Firefox */
-}
-
-/* 調整textarea的內邊距，以適應較窄的滾動條 */
-#mermaidCode {
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
     padding-right: 12px;
 }

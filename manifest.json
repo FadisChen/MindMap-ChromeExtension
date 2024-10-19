@@ -13,10 +13,10 @@
     "128": "128.png"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "scripts/background.js"
   },
   "action": {
-	"default_icon": {
+    "default_icon": {
       "128": "128.png"
     },
     "default_popup": "popup.html"
@@ -24,12 +24,20 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "js": ["scripts/content.js"]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["mermaid.min.js", "styles.css"],
+      "resources": [
+        "scripts/mermaid.min.js",
+        "styles.css",
+        "readfile.html",
+        "scripts/mammoth.browser.min.js",
+        "scripts/pdf.min.js",
+        "scripts/pdf.worker.min.js",
+        "scripts/readfile.js"
+      ],
       "matches": ["<all_urls>"]
     }
   ],

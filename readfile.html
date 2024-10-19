@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文檔讀取</title>
+    <script src="scripts/mammoth.browser.min.js"></script>
+    <script src="scripts/pdf.min.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            box-sizing: border-box;
+            padding: 20px;
+        }
+        #drop-zone {
+            border: 2px dashed #007bff;
+            border-radius: 20px;
+            width: 80%;
+            max-width: 800px;
+            height: 100px;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #ffffff;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        #drop-zone.dragover {
+            background-color: #e6f2ff;
+            border-color: #0056b3;
+        }
+        #drop-zone p {
+            font-size: 18px;
+            color: #007bff;
+        }
+        #output {
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+            height: calc(100vh - 220px); /* 調整這個值以適應您的布局 */
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+        /* 自定義滾動條樣式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* Firefox 的滾動條樣式 */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #888 #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <div id="drop-zone">
+        <p>將 Word 或 PDF 檔案拖曳至此處</p>
+    </div>
+    <div id="output"></div>
+
+    <script src="scripts/readfile.js"></script>
+</body>
+</html>

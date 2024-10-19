@@ -5,13 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>心智圖生成器</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="mermaid.min.js"></script>
+    <script src="scripts/mermaid.min.js"></script>
 </head>
 <body>
     <div class="button-container">
-        <button id="captureButton">擷取內容</button>
-        <button id="clearButton">X</button>
-        <button id="settingsButton">🔑</button>
+        <button id="captureButton" class="emoji-button" title="擷取內容">✒️</button>
+        <button id="fileButton" class="emoji-button" title="上傳檔案">📁</button>
+        <button id="clearButton" class="emoji-button" title="清除">🗑️</button>
+        <button id="downloadButton" class="emoji-button" title="下載">💾</button>
+        <button id="settingsButton" class="emoji-button" title="設定">⚙️</button>
     </div>
     <div id="settingsContainer" style="display: none;">
         <input type="password" id="apiKeyInput" placeholder="請輸入 API Key">
@@ -19,16 +21,14 @@
         <button id="saveSettings">保存設置</button>
     </div>
     <div id="mindmapContainer"></div>
-    <textarea id="mermaidCode" placeholder="LLM 生成的Mermaid Code" style="display: none;"></textarea>
-    <div class="button-container">
+    <textarea id="mermaidCode" placeholder="心智圖 Mermaid Code" style="display: none;"></textarea>
+    <div class="edit-button-container">
         <button id="editButton">編輯</button>
-        <button id="downloadButton">下載</button>
     </div>
-    <!-- 新增摘要區塊，預設隱藏 -->
     <div id="summaryContainer" style="display: none;">
         <h3>摘要</h3>
         <p id="summaryText"></p>
     </div>
-    <script src="popup.js"></script>
+    <script src="scripts/popup.js"></script>
 </body>
 </html>
