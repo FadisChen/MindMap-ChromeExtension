@@ -41,8 +41,10 @@ dropZone.addEventListener('drop', (e) => {
         handleWordFile(file);
     } else if (file.type === 'application/pdf') {
         handlePdfFile(file);
+    } else if (file.type.startsWith('image/')) {
+        handleImageFile(file);
     } else {
-        output.innerHTML = '請上傳 Word (.docx) 或 PDF 文檔。';
+        output.innerHTML = '請上傳 Word (.docx)、PDF 文檔 或 jpg、png 圖片。';
     }
 });
 
@@ -85,6 +87,63 @@ function handlePdfFile(file) {
         }
     };
     reader.readAsArrayBuffer(file);
+}
+
+function handleImageFile(file) {
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+        const base64Image = loadEvent.target.result.split(',')[1];
+        sendToGroqAPI(base64Image);
+    };
+    reader.readAsDataURL(file);
+}
+
+function sendToGroqAPI(base64Image) {
+    chrome.storage.local.get(['groqApiKey'], function(result) {
+        const apiKey = result.groqApiKey;
+        if (!apiKey) {
+            output.innerHTML = '錯誤：API Key 未設置。請在擴展設置中設置 API Key。';
+            return;
+        }
+
+        const apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
+
+        const data = {
+            model: "llama-3.2-90b-vision-preview",
+            messages: [
+                {
+                    role: "user",
+                    content: [
+                        {type: "text", text: "請輸出圖片裡的文字(包含中文、英文、數字等)，不要解釋與說明。圖片內容裡的文字是："},
+                        {
+                            type: "image_url",
+                            image_url: {
+                                url: `data:image/jpeg;base64,${base64Image}`,
+                            },
+                        },
+                    ],
+                }
+            ],
+        };
+
+        fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            const result = data.choices[0].message.content.replace("The text in the image includes the following:", "");
+            output.innerHTML = result;
+        })
+        .catch(error => {
+            //console.error('API 請求錯誤:', error);
+            output.innerHTML = '圖片處理過程中發生錯誤，請稍後再試。';
+        });
+    });
 }
 
 // 防止整個文檔的拖放行為
