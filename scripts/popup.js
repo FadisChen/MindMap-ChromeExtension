@@ -4,6 +4,10 @@ let scale = 1;
 let isDragging = false;
 let startX, startY;
 
+let cy; // 定義全局 Cytoscape 實例
+function startCapture() {
+    chrome.runtime.sendMessage({action: "startCapture"});
+}
 // 在文件開頭添加這個函數
 function stripHtmlTags(html) {
     let tmp = document.createElement("DIV");
@@ -38,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const downloadButton = document.getElementById('downloadButton');
     const editButton = document.getElementById('editButton');
 
-    mermaid.initialize({ startOnLoad: true });
+    //mermaid.initialize({ startOnLoad: true });
 
     // 載入設置
     chrome.storage.local.get(['groqApiKey', 'model'], function(result) {
@@ -102,15 +106,6 @@ document.addEventListener('DOMContentLoaded', function() {
         renderMindmap(this.value);
     });
 
-    // 添加拖曳功能
-    mindmapContainer.addEventListener('mousedown', startDragging);
-    mindmapContainer.addEventListener('mousemove', drag);
-    mindmapContainer.addEventListener('mouseup', stopDragging);
-    mindmapContainer.addEventListener('mouseleave', stopDragging);
-
-    // 添加滾輪縮放功能
-    mindmapContainer.addEventListener('wheel', handleWheel);
-
     downloadButton.addEventListener('click', downloadMindmap);
 
     handleCapturedContent(); // 添加這行
@@ -145,53 +140,6 @@ function initializePopup() {
             document.getElementById('summaryContainer').style.display = 'none';
         }
     });
-}
-
-function startCapture() {
-    chrome.runtime.sendMessage({action: "startCapture"});
-}
-
-function startDragging(e) {
-    isDragging = true;
-    startX = e.clientX - mindmapContainer.offsetLeft;
-    startY = e.clientY - mindmapContainer.offsetTop;
-}
-
-function drag(e) {
-    if (!isDragging) return;
-    e.preventDefault();
-    const x = e.clientX - mindmapContainer.offsetLeft;
-    const y = e.clientY - mindmapContainer.offsetTop;
-    const walkX = (x - startX) * 2;
-    const walkY = (y - startY) * 2;
-    mindmapContainer.scrollLeft -= walkX;
-    mindmapContainer.scrollTop -= walkY;
-    startX = x;
-    startY = y;
-}
-
-function stopDragging() {
-    isDragging = false;
-}
-
-function handleWheel(e) {
-    e.preventDefault();
-    if (e.deltaY < 0) {
-        // 滾輪向前，放大
-        scale *= 1.1;
-    } else {
-        // 滾輪向後，縮小
-        scale /= 1.1;
-    }
-    applyZoom();
-}
-
-function applyZoom() {
-    const svg = mindmapContainer.querySelector('svg');
-    if (svg) {
-        svg.style.transform = `scale(${scale})`;
-        svg.style.transformOrigin = 'top left';
-    }
 }
 
 async function generateResponse(content) {
@@ -232,6 +180,7 @@ async function generateResponse(content) {
             1. 閱讀並理解上述文章內容，識別主要概念和子概念。
             2. 使用Mermaid語法構建心智圖，以結構化方式展示概念和子概念。
             3. Mermaid代碼中的ID應以"${i}_"開頭，例如"${i}_A"、"${i}_B"等。
+            4. Mermaid代碼中的固定以[ ]包起來，例如[${i}_A]、[${i}_B]等。
 
             # Output Format
             - 僅輸出Mermaid語法格式的心智圖代碼。
@@ -299,7 +248,6 @@ async function generateResponse(content) {
 
             // 立即渲染當前的 mindmap
             let currentMindmap = "graph LR\n" + allResponses.join("\n");
-            currentMindmap = convertToFullWidth(currentMindmap);
             document.getElementById('mermaidCode').value = currentMindmap;
             renderMindmap(currentMindmap);
 
@@ -356,9 +304,10 @@ async function generateSummary(content) {
         let allSummaries = [];
         for (let i = 0; i < segments.length; i++) {
             const segment = segments[i];
-            const userPrompt = "請為以下內容<context>生繁體中文摘要：\n\n<context>\n\n" + segment + "\n\n</context>\n\n#zh-TW";
+            let userPrompt = "請為以下內容<context>生繁體中文摘要：\n\n<context>\n\n" + segment + "\n\n</context>\n\n";
 
             if (i > 0) {
+                userPrompt += "請在以下現有的摘要<existing_summary>基礎上繼續擴展：\n\n<existing_summary>\n\n" + allSummaries.join("\n\n") + "\n\n</existing_summary>\n\n#zh-TW";
                 // 如果不是第一個段落，等待10秒
                 await delay(10000);
             }
@@ -409,12 +358,12 @@ async function generateSummary(content) {
                             const parsed = JSON.parse(data);
                             if (parsed.choices && parsed.choices[0].delta && parsed.choices[0].delta.content) {
                                 summary += parsed.choices[0].delta.content;
-                                // 逐字顯示摘要，每個字間隔0.07秒
+                                // 逐字顯示摘要，每個字間隔0.05秒
                                 for (let char of parsed.choices[0].delta.content) {
                                     displayedSummary += char;
                                     document.getElementById('summaryText').textContent = allSummaries.join("\n\n") + (allSummaries.length > 0 ? "\n\n" : "") + displayedSummary;
                                     document.getElementById('summaryContainer').style.display = 'block';
-                                    await delay(70);
+                                    await delay(50);
                                 }
                             }
                         } catch (e) {
@@ -440,6 +389,7 @@ async function generateSummary(content) {
     }
 }
 
+// 修改 renderMindmap 函數
 function renderMindmap(mermaidCode) {
     if (mermaidCode === '') {
         return;
@@ -447,68 +397,138 @@ function renderMindmap(mermaidCode) {
 
     const mindmapContainer = document.getElementById('mindmapContainer');
     mindmapContainer.innerHTML = '';
-    mermaid.render('mindmap', mermaidCode).then(result => {
-        mindmapContainer.innerHTML = result.svg;
-        applyZoom();
-    }).catch(error => {
-        //console.error('Error rendering mindmap:', error);
-        mindmapContainer.innerHTML = '<p>Error rendering mindmap. Please check the Mermaid syntax.</p>';
+
+    // 將 Mermaid 代碼轉換為 Cytoscape 元素
+    const elements = convertMermaidToCytoscape(mermaidCode);
+
+    // 定義顏色方案
+    const colorSchemes = [
+        ['#FF6B6B', '#FF8E8E', '#FFA4A4', '#FFBABA', '#FFD0D0'], // 紅色系
+        ['#4D96FF', '#6BA5FF', '#89B4FF', '#A7C3FF', '#C5D2FF'], // 藍色系
+        ['#6BCB77', '#8AD492', '#A8DDAD', '#C6E6C8', '#E4EFE3'], // 綠色系
+        ['#FFA500', '#FFB733', '#FFC966', '#FFDB99', '#FFEDCC']  // 橘色系
+    ];
+
+    cy = cytoscape({
+        container: mindmapContainer,
+        elements: elements,
+        style: [
+            {
+                selector: 'node',
+                style: {
+                    'background-color': '#FFFF00', // 根節點默認為鮮黃色
+                    'label': 'data(label)',
+                    'text-valign': 'center',
+                    'text-halign': 'center',
+                    'text-wrap': 'wrap',
+                    'text-max-width': '100px',
+                    'font-size': '12px'
+                }
+            },
+            {
+                selector: 'edge',
+                style: {
+                    'width': 2,
+                    'line-color': '#ccc',
+                    'target-arrow-color': '#ccc',
+                    'target-arrow-shape': 'triangle',
+                    'curve-style': 'bezier'
+                }
+            }
+        ],
+        layout: {
+            name: 'dagre',
+            rankDir: 'LR',
+            nodeSep: 50,
+            rankSep: 100,
+            padding: 10
+        }
+    });
+
+    // 為不同分支設置顏色
+    const root = cy.nodes().roots();
+    let colorIndex = 0;
+    root.outgoers('node').forEach(node => {
+        const colorScheme = colorSchemes[colorIndex % colorSchemes.length];
+        colorBranch(node, colorScheme, 0);
+        colorIndex++;
+    });
+
+    // 啟用縮放和平移
+    cy.userZoomingEnabled(true);
+    cy.userPanningEnabled(true);
+
+    // 啟用節點拖曳
+    cy.nodes().grabify();
+
+    // 自動調整視圖以適應所有元素
+    cy.fit();
+}
+
+// 新增函數：為分支設置顏色
+function colorBranch(node, colorScheme, depth) {
+    if (depth >= colorScheme.length) {
+        depth = colorScheme.length - 1;
+    }
+    node.style('background-color', colorScheme[depth]);
+    node.outgoers('node').forEach(child => {
+        colorBranch(child, colorScheme, depth + 1);
     });
 }
 
+// 新增函數：將 Mermaid 代碼轉換為 Cytoscape 元素
+function convertMermaidToCytoscape(mermaidCode) {
+    const lines = mermaidCode.split('\n');
+    const elements = [];
+    const nodeMap = new Map();
+
+    lines.forEach(line => {
+        const match = line.match(/(\w+)(?:\[(.+?)\])?\s*-->\s*(\w+)(?:\[(.+?)\])?/);
+        if (match) {
+            const [, sourceId, sourceLabel, targetId, targetLabel] = match;
+
+            if (!nodeMap.has(sourceId)) {
+                nodeMap.set(sourceId, sourceLabel || sourceId);
+                elements.push({ data: { id: sourceId, label: sourceLabel || sourceId } });
+            }
+
+            if (!nodeMap.has(targetId)) {
+                nodeMap.set(targetId, targetLabel || targetId);
+                elements.push({ data: { id: targetId, label: targetLabel || targetId } });
+            }
+
+            elements.push({ data: { source: sourceId, target: targetId } });
+        }
+    });
+
+    return elements;
+}
+
+// 修改 downloadMindmap 函數
 function downloadMindmap() {
-    const svg = document.querySelector('#mindmapContainer svg');
-    if (!svg) {
-        //console.error('No SVG found');
+    if (!cy) {
+        console.error('Cytoscape instance not found');
         return;
     }
 
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const blob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
-    const url = URL.createObjectURL(blob);
+    // 生成 SVG 字符串
+    const svgContent = cy.svg({scale: 1, full: true, bg: 'white'});
+
+    // 創建 Blob
+    const blob = new Blob([svgContent], {type: 'image/svg+xml;charset=utf-8'});
+
+    // 創建下載鏈接
     const link = document.createElement('a');
-    link.href = url;
+    link.href = URL.createObjectURL(blob);
     link.download = 'mindmap.svg';
+
+    // 觸發下載
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-}
 
-//去除str裡的雙引號，將括號內的括號轉全形
-function convertToFullWidth(str) {
-    str = str.replace(/"/g, '');
-    const brackets = {
-        '[': '［',
-        ']': '］',
-        '(': '（',
-        ')': '）',
-        '{': '｛',
-        '}': '｝'
-    };
-
-    function convert(s) {
-        const stack = [];
-        const result = s.split('');
-
-        for (let i = 0; i < s.length; i++) {
-            if (['[', '(', '{'].includes(s[i])) {
-                stack.push({ char: s[i], index: i });
-            } else if ([']', ')', '}'].includes(s[i])) {
-                if (stack.length > 0) {
-                    const open = stack.pop();
-                    if (stack.length > 0) {
-                        result[open.index] = brackets[open.char];
-                        result[i] = brackets[s[i]];
-                    }
-                }
-            }
-        }
-
-        return result.join('');
-    }
-
-    return convert(str);
+    // 釋放 URL 對象
+    URL.revokeObjectURL(link.href);
 }
 
 // 添加這個監聽器來處理來自background.js的消息

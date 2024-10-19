@@ -30,13 +30,16 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "scripts/mermaid.min.js",
         "styles.css",
         "readfile.html",
         "scripts/mammoth.browser.min.js",
         "scripts/pdf.min.js",
         "scripts/pdf.worker.min.js",
-        "scripts/readfile.js"
+        "scripts/readfile.js",
+        "scripts/cytoscape.min.js",
+        "scripts/dagre.min.js",
+        "scripts/cytoscape-dagre.js",
+        "scripts/cytoscape-svg.js"
       ],
       "matches": ["<all_urls>"]
     }
