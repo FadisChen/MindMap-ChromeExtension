@@ -22,9 +22,15 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         });
     } else if (request.action === "contentCaptured") {
         chrome.action.openPopup();
-        chrome.runtime.sendMessage({action: "reloadContent"});
     } else if (request.action === "captureCancelled") {
         chrome.action.openPopup();
-        chrome.runtime.sendMessage({action: "captureCancelled"});
+    } else if (request.action === "popupReady") {
+        // 當 popup 準備好時，發送相應的消息
+        if (request.captureStatus === "captured") {
+            sendResponse({action: "reloadContent"});
+        } else if (request.captureStatus === "cancelled") {
+            sendResponse({action: "captureCancelled"});
+        }
+        return true; // 表示將異步發送回應
     }
 });

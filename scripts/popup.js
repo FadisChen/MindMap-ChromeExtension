@@ -121,6 +121,16 @@ document.addEventListener('DOMContentLoaded', function() {
             renderMindmap(mermaidCodeTextarea.value);
         }
     });
+
+    // 新增這段代碼
+    chrome.runtime.sendMessage({action: "popupReady"}, function(response) {
+        if (response && response.action === "reloadContent") {
+            handleCapturedContent();
+        } else if (response && response.action === "captureCancelled") {
+            console.log("Capture cancelled");
+            // 可以在這裡添加一些視覺反饋，例如顯示一個通知
+        }
+    });
 });
 
 function initializePopup() {
@@ -144,7 +154,13 @@ function initializePopup() {
 
 async function generateResponse(content) {
     try {
-        document.getElementById('clearButton').click();
+        document.getElementById('mermaidCode').value = '';
+        document.getElementById('mindmapContainer').innerHTML = '';
+        document.getElementById('summaryText').textContent = '';
+        document.getElementById('summaryContainer').style.display = 'none';
+        chrome.storage.local.remove('mermaidCode');
+        chrome.storage.local.remove('summary');
+
         // 確保 content 是乾淨的文本
         content = stripHtmlTags(content);
         
@@ -406,7 +422,11 @@ function renderMindmap(mermaidCode) {
         ['#FF6B6B', '#FF8E8E', '#FFA4A4', '#FFBABA', '#FFD0D0'], // 紅色系
         ['#4D96FF', '#6BA5FF', '#89B4FF', '#A7C3FF', '#C5D2FF'], // 藍色系
         ['#6BCB77', '#8AD492', '#A8DDAD', '#C6E6C8', '#E4EFE3'], // 綠色系
-        ['#FFA500', '#FFB733', '#FFC966', '#FFDB99', '#FFEDCC']  // 橘色系
+        ['#FFA500', '#FFB733', '#FFC966', '#FFDB99', '#FFEDCC'], // 橘色系
+        ['#FFC0CB', '#FFCCCE', '#FFD9D1', '#FFE5D4', '#FFF2D7'], // 粉紅色系
+        ['#800080', '#993399', '#B266B2', '#CC99CC', '#E5CCE5'], // 紫色系
+        ['#FFD700', '#FFE033', '#FFE966', '#FFF299', '#FFFCCC'], // 黃金色系
+        ['#2F4F4F', '#3E6363', '#4D7878', '#5C8C8C', '#6BA1A1']  // 深綠色系
     ];
 
     cy = cytoscape({
@@ -511,8 +531,67 @@ function downloadMindmap() {
         return;
     }
 
+    // 獲取心智圖的實際尺寸
+    const extent = cy.extent();
+    const height = extent.y2 - extent.y1;
+
     // 生成 SVG 字符串
-    const svgContent = cy.svg({scale: 1, full: true, bg: 'white'});
+    let svgContent = cy.svg({scale: 1, full: true, bg: 'white'});
+
+    // 解析 SVG 字符串
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(svgContent, "image/svg+xml");
+
+    // 獲取摘要內容
+    const summaryText = document.getElementById('summaryText').textContent;
+
+    // 計算摘要行數和高度
+    const charsPerLine = 30;
+    const lines = Math.ceil(summaryText.length / charsPerLine);
+    const summaryHeight = lines * 25 + 20; 
+
+    // 創建摘要文本元素
+    const summaryElement = svgDoc.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+    summaryElement.setAttribute("width", "500");
+    summaryElement.setAttribute("height", summaryHeight);
+    summaryElement.setAttribute("x", "10");
+    summaryElement.setAttribute("y", "10");
+
+    const summaryDiv = document.createElementNS("http://www.w3.org/1999/xhtml", "div");
+    summaryDiv.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+    summaryDiv.style.fontFamily = "Arial, sans-serif";
+    summaryDiv.style.fontSize = "16px";
+    summaryDiv.style.lineHeight = "1.2";
+    summaryDiv.style.color = "#333";
+    summaryDiv.style.width = "100%";
+    summaryDiv.style.height = "100%";
+    summaryDiv.style.overflow = "hidden";
+    summaryDiv.style.wordWrap = "break-word";
+
+    // 將摘要文本分行
+    for (let i = 0; i < lines; i++) {
+        const span = document.createElementNS("http://www.w3.org/1999/xhtml", "span");
+        span.textContent = summaryText.substr(i * charsPerLine, charsPerLine);
+        span.style.display = "block";
+        summaryDiv.appendChild(span);
+    }
+
+    summaryElement.appendChild(summaryDiv);
+
+    // 調整 SVG 的尺寸以容納摘要和心智圖
+    const svgElement = svgDoc.documentElement;
+    const totalHeight = summaryHeight + height*1.6 + 50;
+    svgElement.setAttribute("height", totalHeight);
+
+    // 將摘要元素添加到 SVG 的頂部
+    svgDoc.documentElement.insertBefore(summaryElement, svgDoc.documentElement.firstChild);
+
+    // 移動心智圖到摘要下方
+    const mindmapElement = svgDoc.querySelector('svg > g');
+    mindmapElement.setAttribute("transform", `translate(0, ${summaryHeight + 40})`);
+
+    // 將修改後的 SVG 轉回字符串
+    svgContent = new XMLSerializer().serializeToString(svgDoc);
 
     // 創建 Blob
     const blob = new Blob([svgContent], {type: 'image/svg+xml;charset=utf-8'});
@@ -520,7 +599,7 @@ function downloadMindmap() {
     // 創建下載鏈接
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'mindmap.svg';
+    link.download = 'mindmap_with_summary.svg';
 
     // 觸發下載
     document.body.appendChild(link);
@@ -540,3 +619,4 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         // 可以在這裡添加一些視覺反饋，例如顯示一個通知
     }
 });
+

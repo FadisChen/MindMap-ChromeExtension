@@ -1,39 +1,87 @@
-# 中文版
-## 心智圖產生工具
-這是一個使用 Groq AI 的心智圖產生工具，使用前需先取得 Groq API Key。工具允許使用者選取網頁上希望生成心智圖的區塊，並透過 AI 生成 mermaid 語法來顯示心智圖。
+# 心智圖生成器 Chrome 擴充功能 / Mind Map Generator Chrome Extension
 
-## 功能介紹
-1. 選取區塊：使用者可以選取網頁中任何想要生成心智圖的內容區塊。
-2. AI 生成 mermaid：選取內容後，AI 會自動生成 mermaid 語法來繪製心智圖。
-3. 即時更新：AI 生成的 mermaid 內容可能不符合標準，使用者可手動調整 mermaid 語法，即時更新心智圖。
-4. 互動操作：心智圖支援拖曳移動及滾輪縮放。
-5. 下載 SVG：提供將心智圖下載為 SVG 格式的功能。
-6. 產生摘要：提供摘要比對脈絡
-7. 讀取文檔：取得docx, pdf, jpg, png裡的文字內容。(圖片轉文字比較不穩定)
+[English Version](#english-version)
 
-## 使用步驟
-1. 取得 Groq API Key。
-2. 選取網頁上的區塊。
-3. 檢查並手動調整 AI 生成的 mermaid 語法。
-4. 拖曳或縮放心智圖，滿足需求後可下載為 SVG 檔案。
+這是一個基於 Groq API 的 Chrome 擴充功能，可以自動生成心智圖和文章摘要。
 
+## 主要功能
 
+1. 從網頁選取文字並生成心智圖
+2. 上傳 Word、PDF 文件或圖片進行文字識別和心智圖生成
+3. 自動生成文章摘要
+4. 互動式心智圖顯示和編輯
+5. 將心智圖下載為 SVG 格式
+
+## 特色
+
+- 使用 Groq API 進行自然語言處理和圖像識別
+- 支援繁體中文
+- 互動式心智圖使用 Cytoscape.js 實現
+- 可自定義 API 金鑰和模型選擇
+- 支援多種文件格式:Word (.docx)、PDF、圖片 (JPG、PNG)
+
+## 安裝方式
+
+1. 下載此專案的 ZIP 檔案並解壓縮
+2. 在 Chrome 瀏覽器中前往 `chrome://extensions/`
+3. 開啟右上角的「開發人員模式」
+4. 點擊「載入未封裝項目」，選擇解壓縮後的資料夾
+
+## 使用說明
+
+1. 點擊擴充功能圖示開啟彈出視窗
+2. 在設定中輸入您的 Groq API 金鑰
+3. 使用「擷取內容」按鈕選取網頁文字，或使用「上傳檔案」按鈕上傳文件
+4. 等待心智圖和摘要生成
+5. 使用互動式介面查看和編輯心智圖
+6. 點擊「下載」按鈕將心智圖儲存為 SVG 檔案
+
+## 注意事項
+
+- 使用前請確保已設定有效的 Groq API 金鑰
+- 大型文件處理可能需要較長時間，請耐心等待
+- 圖片識別功能僅支援 JPG 和 PNG 格式
+
+---
 
 # English Version
-## Mind Map Generator Tool
-This is a mind map generator tool that uses Groq AI. Before using it, you must first obtain a Groq API Key. The tool allows users to select specific blocks of a webpage and extract them to generate mind maps using mermaid syntax with the help of AI.
 
-## Features
-1. Block Selection: Users can select any content block from the webpage they want to create a mind map for.
-2. AI-Generated Mermaid: After selecting the content, AI generates the mermaid syntax to display the mind map.
-3. Live Updates: AI-generated mermaid syntax may not always meet the standards. Users can manually adjust the mermaid syntax to update the mind map in real-time.
-4. Interactive: Mind maps support drag-and-drop movement and zoom in/out using the mouse wheel.
-5. Download as SVG: The tool provides an option to download the mind map as an SVG file.
-6. Summary: Provide summary comparison
-7. Read File: get context from docx, pdf, jpg, png. (Image to text is unstable) 
+This is a Chrome extension based on the Groq API that automatically generates mind maps and article summaries.
 
-## Steps to Use
-1. Obtain a Groq API Key.
-2. Select the desired block of content from the webpage.
-3. Review and manually adjust the AI-generated mermaid syntax.
-4. Interact with the mind map by dragging or zooming. Once satisfied, download it as an SVG file.
+## Main Features
+
+1. Generate mind maps from selected text on web pages
+2. Upload Word, PDF documents, or images for text recognition and mind map generation
+3. Automatic article summary generation
+4. Interactive mind map display and editing
+5. Download mind maps in SVG format
+
+## Highlights
+
+- Uses Groq API for natural language processing and image recognition
+- Supports Traditional Chinese
+- Interactive mind maps implemented using Cytoscape.js
+- Customizable API key and model selection
+- Supports multiple file formats: Word (.docx), PDF, images (JPG, PNG)
+
+## Installation
+
+1. Download the ZIP file of this project and extract it
+2. Go to `chrome://extensions/` in your Chrome browser
+3. Enable "Developer mode" in the top right corner
+4. Click "Load unpacked" and select the extracted folder
+
+## Usage Instructions
+
+1. Click the extension icon to open the popup window
+2. Enter your Groq API key in the settings
+3. Use the "Capture Content" button to select text from web pages, or use the "Upload File" button to upload documents
+4. Wait for the mind map and summary to generate
+5. Use the interactive interface to view and edit the mind map
+6. Click the "Download" button to save the mind map as an SVG file
+
+## Notes
+
+- Ensure you have set a valid Groq API key before use
+- Processing large documents may take longer, please be patient
+- Image recognition feature only supports JPG and PNG formats
