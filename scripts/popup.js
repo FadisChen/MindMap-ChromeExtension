@@ -451,8 +451,10 @@ function renderMindmap(mermaidCode) {
         ['#6BCB77', '#8AD492', '#A8DDAD', '#C6E6C8', '#E4EFE3'], // 綠色系
         ['#FFA500', '#FFB733', '#FFC966', '#FFDB99', '#FFEDCC'], // 橘色系
         ['#FFC0CB', '#FFCCCE', '#FFD9D1', '#FFE5D4', '#FFF2D7'], // 粉紅色系
-        ['#800080', '#993399', '#B266B2', '#CC99CC', '#E5CCE5'], // 紫色系
-        ['#FFD700', '#FFE033', '#FFE966', '#FFF299', '#FFFCCC'] // 黃金色系
+        ['#FFD700', '#FFE033', '#FFE966', '#FFF299', '#FFFCCC'], // 黃金色系
+        ['#B19CD9', '#C3B1E1', '#D4C4E9', '#E6D9F0', '#F7EDF8'], // 淡紫色系
+        ['#87CEEB', '#A2D9F2', '#BDE4F8', '#D8EFFE', '#F3FAFF'], // 天藍色系
+        ['#F0E68C', '#F4ECA4', '#F7F2BC', '#FBF8D4', '#FEFDED']  // 淡黃色系
     ];
 
     cy = cytoscape({
@@ -489,7 +491,7 @@ function renderMindmap(mermaidCode) {
             name: 'dagre',
             rankDir: 'LR',
             nodeSep: 50,
-            rankSep: 100,
+            rankSep: 200,
             padding: 10
         }
     });
