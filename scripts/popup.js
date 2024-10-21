@@ -1,5 +1,8 @@
-let apiKey = '';
-let model = 'gemma2-9b-it';
+let groqApiKey = '';
+let openaiApiKey = '';
+let groqModel = 'gemma2-9b-it';
+let openaiModel = 'gpt-4o-mini';
+let currentApi = 'groq'; // 預設使用 Groq API
 let scale = 1;
 let isDragging = false;
 let startX, startY;
@@ -30,35 +33,93 @@ function handleCapturedContent() {
   });
 }
 
+// 在文件開頭添加這個函數
+function getApiConfig() {
+    return {
+        groq: {
+            url: 'https://api.groq.com/openai/v1/chat/completions',
+            key: groqApiKey,
+            model: groqModel
+        },
+        openai: {
+            url: 'https://api.openai.com/v1/chat/completions',
+            key: openaiApiKey,
+            model: openaiModel
+        }
+    };
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const captureButton = document.getElementById('captureButton');
     const settingsButton = document.getElementById('settingsButton');
     const clearButton = document.getElementById('clearButton');
     const fileButton = document.getElementById('fileButton');
     const settingsContainer = document.getElementById('settingsContainer');
-    const apiKeyInput = document.getElementById('apiKeyInput');
-    const modelInput = document.getElementById('modelInput');
+    const apiSelector = document.getElementById('apiSelector');
+    const groqApiKeyInput = document.getElementById('groqApiKeyInput');
+    const openaiApiKeyInput = document.getElementById('openaiApiKeyInput');
+    const groqModelInput = document.getElementById('groqModelInput');
+    const openaiModelInput = document.getElementById('openaiModelInput');
     const saveSettingsButton = document.getElementById('saveSettings');
     const mermaidCodeTextarea = document.getElementById('mermaidCode');
     const mindmapContainer = document.getElementById('mindmapContainer');
     const downloadButton = document.getElementById('downloadButton');
     const editButton = document.getElementById('editButton');
+    const groqSettings = document.getElementById('groqSettings');
+    const openaiSettings = document.getElementById('openaiSettings');
 
     //mermaid.initialize({ startOnLoad: true });
 
     // 載入設置
-    chrome.storage.local.get(['groqApiKey', 'model'], function(result) {
+    chrome.storage.local.get(['groqApiKey', 'openaiApiKey', 'groqModel', 'openaiModel', 'currentApi'], function(result) {
         if (result.groqApiKey) {
-            apiKey = result.groqApiKey;
-            apiKeyInput.value = apiKey;
+            groqApiKey = result.groqApiKey;
+            groqApiKeyInput.value = groqApiKey;
         }
-        if (result.model) {
-            model = result.model;
-            modelInput.value = model;
+        if (result.openaiApiKey) {
+            openaiApiKey = result.openaiApiKey;
+            openaiApiKeyInput.value = openaiApiKey;
+        }
+        if (result.groqModel) {
+            groqModel = result.groqModel;
+            groqModelInput.value = groqModel;
         } else {
-            modelInput.value = model; // 設置默認值
+            groqModelInput.value = groqModel; // 設置默認值
+        }
+        if (result.openaiModel) {
+            openaiModel = result.openaiModel;
+            openaiModelInput.value = openaiModel;
+        } else {
+            openaiModelInput.value = openaiModel; // 設置默認值
+        }
+        if (result.currentApi) {
+            currentApi = result.currentApi;
+            apiSelector.value = currentApi;
         }
     });
+
+    apiSelector.addEventListener('change', function() {
+        currentApi = this.value;
+        chrome.storage.local.set({currentApi: currentApi});
+        console.log("Current API changed to:", currentApi);
+        
+        if (currentApi === 'groq') {
+            groqSettings.style.display = 'block';
+            openaiSettings.style.display = 'none';
+        } else {
+            groqSettings.style.display = 'none';
+            openaiSettings.style.display = 'block';
+        }
+    });
+
+    // 初始化設置顯示
+    if (currentApi === 'groq') {
+        groqSettings.style.display = 'block';
+        openaiSettings.style.display = 'none';
+    } else {
+        groqSettings.style.display = 'none';
+        openaiSettings.style.display = 'block';
+    }
 
     initializePopup();
 
@@ -80,9 +141,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     saveSettingsButton.addEventListener('click', function() {
-        apiKey = apiKeyInput.value;
-        model = modelInput.value;
-        chrome.storage.local.set({groqApiKey: apiKey, model: model}, function() {
+        groqApiKey = groqApiKeyInput.value;
+        openaiApiKey = openaiApiKeyInput.value;
+        groqModel = groqModelInput.value;
+        openaiModel = openaiModelInput.value;
+        chrome.storage.local.set({
+            groqApiKey: groqApiKey, 
+            openaiApiKey: openaiApiKey, 
+            groqModel: groqModel, 
+            openaiModel: openaiModel
+        }, function() {
             settingsContainer.style.display = 'none';
         });
     });
@@ -161,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializePopup() {
-    chrome.storage.local.get(['mermaidCode', 'summary'], function(result) {
+    chrome.storage.local.get(['mermaidCode', 'summary', 'llmType'], function(result) {
         if (result.mermaidCode) {
             document.getElementById('mermaidCode').value = result.mermaidCode;
             renderMindmap(result.mermaidCode);
@@ -173,12 +241,14 @@ function initializePopup() {
         if (result.summary) {
             document.getElementById('summaryText').textContent = result.summary;
             document.getElementById('summaryContainer').style.display = 'block';
+            document.getElementById('llmType').textContent = result.llmType === 'groq' ? 'Groq' : 'OpenAI';
         } else {
             document.getElementById('summaryContainer').style.display = 'none';
         }
     });
 }
 
+// 修改 generateResponse 函數
 async function generateResponse(content) {
     try {
         document.getElementById('mermaidCode').value = '';
@@ -191,7 +261,7 @@ async function generateResponse(content) {
         // 確保 content 是乾淨的文本
         content = stripHtmlTags(content);
         document.getElementById('userInput').value = content;
-        if (!apiKey) {
+        if (!groqApiKey && !openaiApiKey) {
             document.getElementById('mindmapContainer').innerHTML = `
             <div style="color: red; padding: 10px; text-align: center;">
                 錯誤：API Key 未設置。
@@ -247,14 +317,16 @@ async function generateResponse(content) {
 
             #zh-TW`;
 
-            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            const apiConfig = getApiConfig()[currentApi];
+
+            const response = await fetch(apiConfig.url, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${apiKey}`,
+                    'Authorization': `Bearer ${apiConfig.key}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: model,
+                    model: apiConfig.model,
                     messages: [
                         { role: "system", content: systemPrompt },
                         { role: "user", content: userPrompt }
@@ -268,14 +340,14 @@ async function generateResponse(content) {
             });
 
             if (!response.ok) {
-                //throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
             console.log("API response:", data);
 
             if (!data.choices || data.choices.length === 0) {
-                //throw new Error("No choices in API response");
+                throw new Error("No choices in API response");
             }
 
             let generatedResponse = data.choices[0].message.content.trim();
@@ -301,6 +373,7 @@ async function generateResponse(content) {
         // 在生成心智圖後呼叫生成摘要的函數
         await generateSummary(content);
     } catch (error) {
+        console.error("Error in generateResponse:", error);
         document.getElementById('mermaidCode').value = '';
         document.getElementById('mindmapContainer').innerHTML = `
             <div style="color: red; padding: 10px; text-align: center;">
@@ -315,6 +388,7 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// 修改 generateSummary 函數
 async function generateSummary(content) {
     try {
         const systemPrompt = `根據提供的內容生成摘要，摘要需以繁體中文呈現，捕捉內容的主要觀點和關鍵信息，並控制在150至250字之間。
@@ -350,14 +424,16 @@ async function generateSummary(content) {
             const segment = segments[i];
             let userPrompt = "請為以下內容<context>生成繁體中文摘要：\n\n<context>\n\n" + segment + "\n\n</context>\n\n#zh-TW";
 
-            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            const apiConfig = getApiConfig()[currentApi];
+
+            const response = await fetch(apiConfig.url, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${apiKey}`,
+                    'Authorization': `Bearer ${apiConfig.key}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: model,
+                    model: apiConfig.model,
                     messages: [
                         { role: "system", content: systemPrompt },
                         { role: "user", content: userPrompt }
@@ -383,14 +459,19 @@ async function generateSummary(content) {
         // 生成最終摘要
         const finalUserPrompt = "請根據以下摘要內容生成一份完整的摘要，捕捉所有重要信息：\n\n" + allSummaries.join("\n\n") + "\n\n請確保最終摘要在150至250字之間。#zh-TW";
 
-        const finalResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        const apiConfig = getApiConfig()[currentApi];
+        
+        // 設置 LLM 類型
+        document.getElementById('llmType').textContent = currentApi === 'groq' ? 'Groq' : 'OpenAI';
+
+        const finalResponse = await fetch(apiConfig.url, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${apiKey}`,
+                'Authorization': `Bearer ${apiConfig.key}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: model,
+                model: apiConfig.model,
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: finalUserPrompt }
@@ -411,18 +492,21 @@ async function generateSummary(content) {
         if (finalData.choices && finalData.choices.length > 0) {
             const finalSummary = finalData.choices[0].message.content.trim();
             
+            // 顯示摘要容器
+            document.getElementById('summaryContainer').style.display = 'block';
+            
             // 逐字顯示摘要
             document.getElementById('summaryText').textContent = '';
-            document.getElementById('summaryContainer').style.display = 'block';
             for (let char of finalSummary) {
                 document.getElementById('summaryText').textContent += char;
                 await delay(50);
             }
 
             // 保存當前的摘要到 localStorage
-            chrome.storage.local.set({summary: finalSummary});
+            chrome.storage.local.set({summary: finalSummary, llmType: currentApi});
         }
     } catch (error) {
+        console.error("Error in generateSummary:", error);
         document.getElementById('summaryText').textContent = `生成摘要時發生錯誤：${error.message}。請檢查您的設置並重試。`;
         document.getElementById('summaryContainer').style.display = 'block';
     }
@@ -657,4 +741,3 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         // 可以在這裡添加一些視覺反饋，例如顯示一個通知
     }
 });
-

@@ -20,8 +20,20 @@
         <button id="settingsButton" class="emoji-button" title="設定">⚙️</button>
     </div>
     <div id="settingsContainer" style="display: none;">
-        <input type="password" id="apiKeyInput" placeholder="請輸入 API Key">
-        <input type="text" id="modelInput" placeholder="請輸入模型名稱">
+        <div class="select-wrapper">
+            <select id="apiSelector">
+                <option value="groq">Groq API</option>
+                <option value="openai">OpenAI API</option>
+            </select>
+        </div>
+        <div id="groqSettings">
+            <input type="password" id="groqApiKeyInput" placeholder="請輸入 Groq API Key">
+            <input type="text" id="groqModelInput" placeholder="請輸入 Groq 模型名稱">
+        </div>
+        <div id="openaiSettings" style="display: none;">
+            <input type="password" id="openaiApiKeyInput" placeholder="請輸入 OpenAI API Key">
+            <input type="text" id="openaiModelInput" placeholder="請輸入 OpenAI 模型名稱">
+        </div>
         <button id="saveSettings">保存設置</button>
     </div>
     <div id="writeContainer" style="display: none;">
@@ -37,7 +49,7 @@
         <button id="editButton">編輯</button>
     </div>
     <div id="summaryContainer" style="display: none;">
-        <h3>摘要</h3>
+        <h3>摘要 (<span id="llmType"></span>)</h3>
         <p id="summaryText"></p>
     </div>
     <script src="scripts/popup.js"></script>
