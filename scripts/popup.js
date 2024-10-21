@@ -350,7 +350,7 @@ async function generateSummary(content) {
             let userPrompt = "請為以下內容<context>生繁體中文摘要：\n\n<context>\n\n" + segment + "\n\n</context>\n\n";
 
             if (i > 0) {
-                userPrompt += "請在以下現有的摘要<existing_summary>基礎上繼續擴展：\n\n<existing_summary>\n\n" + allSummaries.join("\n\n") + "\n\n</existing_summary>\n\n#zh-TW";
+                userPrompt += "請在以下現有的摘要<existing_summary>上繼續，但不要輸出<existing_summary>的內容：\n\n<existing_summary>\n\n" + allSummaries.join("\n\n") + "\n\n</existing_summary>\n\n#zh-TW";
                 // 如果不是第一個段落，等待10秒
                 await delay(10000);
             }
