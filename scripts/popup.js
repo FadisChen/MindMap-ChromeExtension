@@ -332,7 +332,8 @@ async function generateSummary(content) {
 
                             # Notes
                             - 當內容複雜且信息量大時，優先考慮最重要的觀點和資訊。
-                            - 確保摘要留有完整性和連貫性，不丟失關鍵細節。#zh-TW`;
+                            - 確保摘要留有完整性和連貫性，不丟失關鍵細節。
+                            #zh-TW`;
 
         let segments = [];
         if (content.length > 3000) {
@@ -347,13 +348,7 @@ async function generateSummary(content) {
         let allSummaries = [];
         for (let i = 0; i < segments.length; i++) {
             const segment = segments[i];
-            let userPrompt = "請為以下內容<context>生繁體中文摘要：\n\n<context>\n\n" + segment + "\n\n</context>\n\n";
-
-            if (i > 0) {
-                userPrompt += "請在以下現有的摘要<existing_summary>上繼續，但不要輸出<existing_summary>的內容：\n\n<existing_summary>\n\n" + allSummaries.join("\n\n") + "\n\n</existing_summary>\n\n#zh-TW";
-                // 如果不是第一個段落，等待10秒
-                await delay(10000);
-            }
+            let userPrompt = "請為以下內容<context>生成繁體中文摘要：\n\n<context>\n\n" + segment + "\n\n</context>\n\n#zh-TW";
 
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
@@ -370,61 +365,62 @@ async function generateSummary(content) {
                     temperature: 0.7,
                     max_tokens: 512,
                     top_p: 1,
-                    stream: true,
+                    stream: false,
                     stop: null
                 })
             });
 
             if (!response.ok) {
-                //throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder("utf-8");
-            let summary = "";
-            let displayedSummary = "";
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) {
-                    break;
-                }
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const data = line.slice(6);
-                        if (data === '[DONE]') {
-                            break;
-                        }
-                        try {
-                            const parsed = JSON.parse(data);
-                            if (parsed.choices && parsed.choices[0].delta && parsed.choices[0].delta.content) {
-                                summary += parsed.choices[0].delta.content;
-                                // 逐字顯示摘要，每個字間隔0.05秒
-                                for (let char of parsed.choices[0].delta.content) {
-                                    displayedSummary += char;
-                                    document.getElementById('summaryText').textContent = allSummaries.join("\n\n") + (allSummaries.length > 0 ? "\n\n" : "") + displayedSummary;
-                                    document.getElementById('summaryContainer').style.display = 'block';
-                                    await delay(50);
-                                }
-                            }
-                        } catch (e) {
-                            //console.error('Error parsing JSON:', e);
-                        }
-                    }
-                }
+            const data = await response.json();
+            if (data.choices && data.choices.length > 0) {
+                allSummaries.push(data.choices[0].message.content.trim());
             }
+        }
 
-            if (summary === "") {
-                //throw new Error("No content generated for summary");
+        // 生成最終摘要
+        const finalUserPrompt = "請根據以下摘要內容生成一份完整的摘要，捕捉所有重要信息：\n\n" + allSummaries.join("\n\n") + "\n\n請確保最終摘要在150至250字之間。#zh-TW";
+
+        const finalResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: finalUserPrompt }
+                ],
+                temperature: 0.7,
+                max_tokens: 512,
+                top_p: 1,
+                stream: false,
+                stop: null
+            })
+        });
+
+        if (!finalResponse.ok) {
+            throw new Error(`HTTP error! status: ${finalResponse.status}`);
+        }
+
+        const finalData = await finalResponse.json();
+        if (finalData.choices && finalData.choices.length > 0) {
+            const finalSummary = finalData.choices[0].message.content.trim();
+            
+            // 逐字顯示摘要
+            document.getElementById('summaryText').textContent = '';
+            document.getElementById('summaryContainer').style.display = 'block';
+            for (let char of finalSummary) {
+                document.getElementById('summaryText').textContent += char;
+                await delay(50);
             }
-
-            allSummaries.push(summary);
 
             // 保存當前的摘要到 localStorage
-            let currentSummary = allSummaries.join("\n\n");
-            chrome.storage.local.set({summary: currentSummary});
+            chrome.storage.local.set({summary: finalSummary});
         }
     } catch (error) {
         document.getElementById('summaryText').textContent = `生成摘要時發生錯誤：${error.message}。請檢查您的設置並重試。`;
