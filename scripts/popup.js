@@ -5,6 +5,8 @@ let isDragging = false;
 let startX, startY;
 
 let cy; // 定義全局 Cytoscape 實例
+let writeButton, writeContainer, userInput, generateButton, cancelButton;
+
 function startCapture() {
     chrome.runtime.sendMessage({action: "startCapture"});
 }
@@ -104,6 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     mermaidCodeTextarea.addEventListener('input', function() {
         renderMindmap(this.value);
+        chrome.storage.local.set({mermaidCode: this.value});
     });
 
     downloadButton.addEventListener('click', downloadMindmap);
@@ -130,6 +133,30 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("Capture cancelled");
             // 可以在這裡添加一些視覺反饋，例如顯示一個通知
         }
+    });
+
+    writeButton = document.getElementById('writeButton');
+    writeContainer = document.getElementById('writeContainer');
+    userInput = document.getElementById('userInput');
+    generateButton = document.getElementById('generateButton');
+    cancelButton = document.getElementById('cancelButton');
+
+    writeButton.addEventListener('click', function() {
+        writeContainer.style.display = 'block';
+    });
+
+    generateButton.addEventListener('click', function() {
+        const content = userInput.value.trim();
+        if (content) {
+            generateResponse(content);
+            writeContainer.style.display = 'none';
+            userInput.value = '';
+        }
+    });
+
+    cancelButton.addEventListener('click', function() {
+        writeContainer.style.display = 'none';
+        userInput.value = '';
     });
 });
 
@@ -165,11 +192,11 @@ async function generateResponse(content) {
         content = stripHtmlTags(content);
         
         if (!apiKey) {
-            //throw new Error("API Key 未設置");
             document.getElementById('mindmapContainer').innerHTML = `
             <div style="color: red; padding: 10px; text-align: center;">
                 錯誤：API Key 未設置。
             </div>`;
+            return;
         }
 
         const systemPrompt = "Generate a mindmap in Mermaid syntax based on user input. The mindmap should follow a left-to-right (LR) flow and be displayed in Traditional Chinese.\n\n# Steps\n\n1. **Understand User Input**: Parse and comprehend the user's input to determine the main topics and subtopics for the mindmap.\n2. **Structure the Mindmap**: Organize the input into a hierarchy that represents a mindmap, identifying connections between nodes.\n3. **Translate Elements**: Ensure that all elements are translated into Traditional Chinese, if they are not already.\n4. **Format in Mermaid Syntax**: Use the Mermaid syntax for creating a graph with \"graph LR\" to arrange nodes from left to right.\n\n# Output Format\n\n- Provide the output as a Mermaid code snippet structured for a left-to-right mindmap.\n- Ensure the syntax aligns with Mermaid's requirements for a graph representation.\n\n# Examples\n\n**Input**: 數位行銷 -> 社交媒體, 電子郵件, 內容行銷; 社交媒體 -> 臉書, 推特; 電子郵件 -> 活動推廣  \n**Output**:  \n```\ngraph LR  \n    A[數位行銷] --> B[社交媒體]  \n    A --> C[電子郵件]  \n    A --> D[內容行銷]  \n    B --> E[臉書]  \n    B --> F[推特]  \n    C --> G[活動推廣]  \n```\n\n*(Real-world examples should be more complex and include additional subtopics as necessary.)*\n\n# Notes\n\n- Confirm that all graph nodes and labels are in Traditional Chinese.\n- Double-check Mermaid syntax for accuracy to ensure correct rendering. Do not include the ```mermaid code fence in your response.\n- Only include the graph content, starting with 'graph LR'.\n#zh-TW";
@@ -425,8 +452,7 @@ function renderMindmap(mermaidCode) {
         ['#FFA500', '#FFB733', '#FFC966', '#FFDB99', '#FFEDCC'], // 橘色系
         ['#FFC0CB', '#FFCCCE', '#FFD9D1', '#FFE5D4', '#FFF2D7'], // 粉紅色系
         ['#800080', '#993399', '#B266B2', '#CC99CC', '#E5CCE5'], // 紫色系
-        ['#FFD700', '#FFE033', '#FFE966', '#FFF299', '#FFFCCC'], // 黃金色系
-        ['#2F4F4F', '#3E6363', '#4D7878', '#5C8C8C', '#6BA1A1']  // 深綠色系
+        ['#FFD700', '#FFE033', '#FFE966', '#FFF299', '#FFFCCC'] // 黃金色系
     ];
 
     cy = cytoscape({
@@ -441,8 +467,11 @@ function renderMindmap(mermaidCode) {
                     'text-valign': 'center',
                     'text-halign': 'center',
                     'text-wrap': 'wrap',
-                    'text-max-width': '100px',
-                    'font-size': '12px'
+                    'text-max-width': '200px',
+                    'font-size': '12px',
+                    'shape': 'roundrectangle',
+                    'line-height': 1.5,
+                    'padding': 3
                 }
             },
             {
@@ -472,6 +501,18 @@ function renderMindmap(mermaidCode) {
         const colorScheme = colorSchemes[colorIndex % colorSchemes.length];
         colorBranch(node, colorScheme, 0);
         colorIndex++;
+    });
+
+    // 在創建完 Cytoscape 實例後，調整節點大小
+    cy.nodes().forEach(function(node) {
+        var padding = parseFloat(node.style('padding'));
+        var textWidth = node.boundingBox({includeLabels: true}).w;
+        var textHeight = node.boundingBox({includeLabels: true}).h;
+        var lineCount = node.data('label').split('\n').length;
+        node.style({
+            'width': textWidth ,
+            'height': textHeight 
+        });
     });
 
     // 啟用縮放和平移
@@ -619,4 +660,3 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         // 可以在這裡添加一些視覺反饋，例如顯示一個通知
     }
 });
-

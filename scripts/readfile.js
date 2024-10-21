@@ -4,13 +4,13 @@ const output = document.getElementById('output');
 // 添加錯誤處理
 window.onerror = function(message, source, lineno, colno, error) {
     console.error('Global error:', message, 'at', source, lineno, colno);
-    output.innerHTML += '<br>發生錯誤: ' + message;
+    output.value = '發生錯誤: ' + message;
 };
 
 // 確保 PDF.js 已正確加載
 if (typeof pdfjsLib === 'undefined') {
     console.error('PDF.js library not loaded');
-    output.innerHTML += '<br>PDF.js 庫未正確加載';
+    output.value = 'PDF.js 庫未正確加載';
 } else {
     console.log('PDF.js library loaded successfully');
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'scripts/pdf.worker.min.js';
@@ -35,7 +35,7 @@ dropZone.addEventListener('drop', (e) => {
     const file = e.dataTransfer.files[0];
     
     console.log('File dropped:', file.name, 'Type:', file.type);
-    output.innerHTML = '正在處理文件: ' + file.name;
+    output.value = '正在處理文件: ' + file.name;
 
     if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
         handleWordFile(file);
@@ -44,7 +44,7 @@ dropZone.addEventListener('drop', (e) => {
     } else if (file.type.startsWith('image/')) {
         handleImageFile(file);
     } else {
-        output.innerHTML = '請上傳 Word (.docx)、PDF 文檔 或 jpg、png 圖片。';
+        output.value = '請上傳 Word (.docx)、PDF 文檔 或 jpg、png 圖片。';
     }
 });
 
@@ -54,11 +54,11 @@ function handleWordFile(file) {
         const arrayBuffer = loadEvent.target.result;
         mammoth.convertToHtml({ arrayBuffer: arrayBuffer })
             .then(result => {
-                output.innerHTML = result.value;
+                output.value = result.value;
             })
             .catch(error => {
                 console.error('Word 轉換錯誤:', error);
-                output.innerHTML = 'Word 轉換過程中發生錯誤，請稍後再試。';
+                output.value = 'Word 轉換過程中發生錯誤，請稍後再試。';
             });
     };
     reader.readAsArrayBuffer(file);
@@ -79,11 +79,11 @@ function handlePdfFile(file) {
                 const content = await page.getTextContent();
                 text += content.items.map(item => item.str).join(' ') + '<br><br>';
             }
-            output.innerHTML = text;
+            output.value = text;
             console.log('PDF processing completed');
         } catch (error) {
             console.error('PDF 轉換錯誤:', error);
-            output.innerHTML = 'PDF 轉換過程中發生錯誤，請稍後再試。錯誤詳情: ' + error.message;
+            output.value = 'PDF 轉換過程中發生錯誤，請稍後再試。錯誤詳情: ' + error.message;
         }
     };
     reader.readAsArrayBuffer(file);
@@ -102,7 +102,7 @@ function sendToGroqAPI(base64Image) {
     chrome.storage.local.get(['groqApiKey'], function(result) {
         const apiKey = result.groqApiKey;
         if (!apiKey) {
-            output.innerHTML = '錯誤：API Key 未設置。請在擴展設置中設置 API Key。';
+            output.value = '錯誤：API Key 未設置。請在擴展設置中設置 API Key。';
             return;
         }
 
@@ -137,11 +137,11 @@ function sendToGroqAPI(base64Image) {
         .then(response => response.json())
         .then(data => {
             const result = data.choices[0].message.content.replace("The text in the image includes the following:", "");
-            output.innerHTML = result;
+            output.value = result;
         })
         .catch(error => {
             //console.error('API 請求錯誤:', error);
-            output.innerHTML = '圖片處理過程中發生錯誤，請稍後再試。';
+            output.value = '圖片處理過程中發生錯誤，請稍後再試。';
         });
     });
 }

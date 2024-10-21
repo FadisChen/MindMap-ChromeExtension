@@ -51,28 +51,32 @@
             border-radius: 10px;
             width: 80%;
             max-width: 800px;
-            height: calc(100vh - 220px); /* 調整這個值以適應您的布局 */
+            height: calc(100vh - 220px);
             background-color: #ffffff;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             overflow-y: auto;
+            resize: none;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
         }
         /* 自定義滾動條樣式 */
-        ::-webkit-scrollbar {
+        #output::-webkit-scrollbar {
             width: 8px;
         }
-        ::-webkit-scrollbar-track {
+        #output::-webkit-scrollbar-track {
             background: #f1f1f1;
             border-radius: 4px;
         }
-        ::-webkit-scrollbar-thumb {
+        #output::-webkit-scrollbar-thumb {
             background: #888;
             border-radius: 4px;
         }
-        ::-webkit-scrollbar-thumb:hover {
+        #output::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
         /* Firefox 的滾動條樣式 */
-        * {
+        #output {
             scrollbar-width: thin;
             scrollbar-color: #888 #f1f1f1;
         }
@@ -82,7 +86,7 @@
     <div id="drop-zone">
         <p>將 Word、PDF 或圖片檔案拖曳至此處</p>
     </div>
-    <div id="output"></div>
+    <textarea id="output"></textarea>
 
     <script src="scripts/readfile.js"></script>
 </body>

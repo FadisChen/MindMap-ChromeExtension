@@ -12,8 +12,9 @@
 </head>
 <body>
     <div class="button-container">
-        <button id="captureButton" class="emoji-button" title="擷取內容">✒️</button>
-        <button id="fileButton" class="emoji-button" title="上傳檔案">📁</button>
+        <button id="captureButton" class="emoji-button" title="擷取">👆</button>
+        <button id="writeButton" class="emoji-button" title="書寫">✒️</button>
+        <button id="fileButton" class="emoji-button" title="上傳">📁</button>
         <button id="clearButton" class="emoji-button" title="清除">🗑️</button>
         <button id="downloadButton" class="emoji-button" title="下載">💾</button>
         <button id="settingsButton" class="emoji-button" title="設定">⚙️</button>
@@ -23,7 +24,14 @@
         <input type="text" id="modelInput" placeholder="請輸入模型名稱">
         <button id="saveSettings">保存設置</button>
     </div>
-    <div id="mindmapContainer" ></div>
+    <div id="writeContainer" style="display: none;">
+        <textarea id="userInput" placeholder="請輸入要轉成心智圖和摘要的內容"></textarea>
+        <div class="write-button-container">
+            <button id="generateButton">產生</button>
+            <button id="cancelButton">取消</button>
+        </div>
+    </div>
+    <div id="mindmapContainer"></div>
     <textarea id="mermaidCode" placeholder="心智圖 Mermaid Code" style="display: none;"></textarea>
     <div class="edit-button-container">
         <button id="editButton">編輯</button>
