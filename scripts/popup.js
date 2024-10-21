@@ -477,7 +477,8 @@ function renderMindmap(mermaidCode) {
             nodeSep: 50,
             rankSep: 200,
             padding: 10
-        }
+        },
+        wheelSensitivity: 0.2  // 添加這行來降低縮放靈敏度
     });
 
     // 設置根節點的樣式
@@ -514,6 +515,7 @@ function renderMindmap(mermaidCode) {
 
     // 自動調整視圖以適應所有元素
     cy.fit();
+    cy.center();
 }
 
 function colorBranch(node, color) {
@@ -655,3 +657,4 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         // 可以在這裡添加一些視覺反饋，例如顯示一個通知
     }
 });
+
