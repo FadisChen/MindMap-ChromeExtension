@@ -441,21 +441,7 @@ function renderMindmap(mermaidCode) {
     const mindmapContainer = document.getElementById('mindmapContainer');
     mindmapContainer.innerHTML = '';
 
-    // 將 Mermaid 代碼轉換為 Cytoscape 元素
     const elements = convertMermaidToCytoscape(mermaidCode);
-
-    // 定義顏色方案
-    const colorSchemes = [
-        ['#FF6B6B', '#FF8E8E', '#FFA4A4', '#FFBABA', '#FFD0D0'], // 紅色系
-        ['#4D96FF', '#6BA5FF', '#89B4FF', '#A7C3FF', '#C5D2FF'], // 藍色系
-        ['#6BCB77', '#8AD492', '#A8DDAD', '#C6E6C8', '#E4EFE3'], // 綠色系
-        ['#FFA500', '#FFB733', '#FFC966', '#FFDB99', '#FFEDCC'], // 橘色系
-        ['#FFC0CB', '#FFCCCE', '#FFD9D1', '#FFE5D4', '#FFF2D7'], // 粉紅色系
-        ['#FFD700', '#FFE033', '#FFE966', '#FFF299', '#FFFCCC'], // 黃金色系
-        ['#B19CD9', '#C3B1E1', '#D4C4E9', '#E6D9F0', '#F7EDF8'], // 淡紫色系
-        ['#87CEEB', '#A2D9F2', '#BDE4F8', '#D8EFFE', '#F3FAFF'], // 天藍色系
-        ['#F0E68C', '#F4ECA4', '#F7F2BC', '#FBF8D4', '#FEFDED']  // 淡黃色系
-    ];
 
     cy = cytoscape({
         container: mindmapContainer,
@@ -464,7 +450,9 @@ function renderMindmap(mermaidCode) {
             {
                 selector: 'node',
                 style: {
-                    'background-color': '#FFFF00', // 根節點默認為鮮黃色
+                    'background-color': 'white',
+                    'border-width': 2,
+                    'border-color': '#000000',
                     'label': 'data(label)',
                     'text-valign': 'center',
                     'text-halign': 'center',
@@ -496,24 +484,28 @@ function renderMindmap(mermaidCode) {
         }
     });
 
+    // 設置根節點的樣式
+    cy.nodes().roots().style({
+        'background-color': '#AAFFFF',
+        'border-color': '#33FFFF'
+    });
+
     // 為不同分支設置顏色
     const root = cy.nodes().roots();
     let colorIndex = 0;
     root.outgoers('node').forEach(node => {
-        const colorScheme = colorSchemes[colorIndex % colorSchemes.length];
-        colorBranch(node, colorScheme, 0);
+        const color = generateColor(colorIndex);
+        colorBranch(node, color);
         colorIndex++;
     });
 
-    // 在創建完 Cytoscape 實例後，調整節點大小
+    // 調整節點大小
     cy.nodes().forEach(function(node) {
-        var padding = parseFloat(node.style('padding'));
         var textWidth = node.boundingBox({includeLabels: true}).w;
         var textHeight = node.boundingBox({includeLabels: true}).h;
-        var lineCount = node.data('label').split('\n').length;
         node.style({
-            'width': textWidth ,
-            'height': textHeight 
+            'width': textWidth,
+            'height': textHeight
         });
     });
 
@@ -528,15 +520,20 @@ function renderMindmap(mermaidCode) {
     cy.fit();
 }
 
-// 新增函數：為分支設置顏色
-function colorBranch(node, colorScheme, depth) {
-    if (depth >= colorScheme.length) {
-        depth = colorScheme.length - 1;
+function colorBranch(node, color) {
+    if (!node.isChild()) { // 如果不是根節點
+        node.style('border-color', color);
     }
-    node.style('background-color', colorScheme[depth]);
     node.outgoers('node').forEach(child => {
-        colorBranch(child, colorScheme, depth + 1);
+        colorBranch(child, color);
     });
+}
+
+function generateColor(index) {
+    // 使用 HSL 顏色模型生成顏色
+    // 調整色相以獲得不同的顏色，保持飽和度和亮度不變
+    const hue = (index * 137.5) % 360; // 使用黃金角來分散顏色
+    return `hsl(${hue}, 70%, 50%)`;
 }
 
 // 新增函數：將 Mermaid 代碼轉換為 Cytoscape 元素
