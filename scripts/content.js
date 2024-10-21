@@ -1,5 +1,13 @@
+// 在文件開頭添加這個函數
+function stripHtmlTags(html) {
+    let tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+}
+
 let captureMode = false;
 let originalStyles = new Map();
+let wordCountElement = null;
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request.action === "startCapture") {
@@ -76,6 +84,52 @@ document.addEventListener('click', function(e) {
     }
 });
 
+// 新增選取文字時顯示字數的功能
+document.addEventListener('selectionchange', function() {
+    const selection = window.getSelection();
+    const selectedText = selection.toString().trim();
+
+    if (selectedText.length > 0) {
+        showWordCount(selectedText.length);
+    } else {
+        hideWordCount();
+    }
+});
+
+document.addEventListener('mousemove', updateWordCountPosition);
+
+function showWordCount(count) {
+    if (!wordCountElement) {
+        wordCountElement = document.createElement('div');
+        wordCountElement.style.cssText = `
+            position: fixed;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 2px 5px;
+            font-size: 12px;
+            border-radius: 3px;
+            z-index: 10001;
+            pointer-events: none;
+        `;
+        document.body.appendChild(wordCountElement);
+    }
+    wordCountElement.textContent = `${count} 字`;
+    wordCountElement.style.display = 'block';
+}
+
+function hideWordCount() {
+    if (wordCountElement) {
+        wordCountElement.style.display = 'none';
+    }
+}
+
+function updateWordCountPosition(e) {
+    if (wordCountElement && wordCountElement.style.display !== 'none') {
+        wordCountElement.style.left = `${e.clientX + 14}px`;
+        wordCountElement.style.top = `${e.clientY - 3}px`;
+    }
+}
+
 function highlightElement(element) {
     if (!originalStyles.has(element)) {
         originalStyles.set(element, {
@@ -85,6 +139,10 @@ function highlightElement(element) {
     }
     element.style.outline = '2px solid red';
     element.style.backgroundColor = 'rgba(255, 0, 0, 0.1)';
+
+    const cleanText = stripHtmlTags(element.innerHTML);
+    const wordCount = cleanText.trim().length;
+    showWordCount(wordCount);
 }
 
 function restoreElement(element) {
@@ -94,6 +152,7 @@ function restoreElement(element) {
         element.style.backgroundColor = original.backgroundColor;
         originalStyles.delete(element);
     }
+    hideWordCount();
 }
 
 function restoreAllElements() {
@@ -102,6 +161,7 @@ function restoreAllElements() {
         element.style.backgroundColor = styles.backgroundColor;
     });
     originalStyles.clear();
+    hideWordCount();
 }
 
 //console.log("Content script loaded");

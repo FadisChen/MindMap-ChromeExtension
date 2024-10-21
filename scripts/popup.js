@@ -190,7 +190,7 @@ async function generateResponse(content) {
 
         // 確保 content 是乾淨的文本
         content = stripHtmlTags(content);
-        
+        document.getElementById('userInput').value = content;
         if (!apiKey) {
             document.getElementById('mindmapContainer').innerHTML = `
             <div style="color: red; padding: 10px; text-align: center;">
@@ -202,9 +202,9 @@ async function generateResponse(content) {
         const systemPrompt = "Generate a mindmap in Mermaid syntax based on user input. The mindmap should follow a left-to-right (LR) flow and be displayed in Traditional Chinese.\n\n# Steps\n\n1. **Understand User Input**: Parse and comprehend the user's input to determine the main topics and subtopics for the mindmap.\n2. **Structure the Mindmap**: Organize the input into a hierarchy that represents a mindmap, identifying connections between nodes.\n3. **Translate Elements**: Ensure that all elements are translated into Traditional Chinese, if they are not already.\n4. **Format in Mermaid Syntax**: Use the Mermaid syntax for creating a graph with \"graph LR\" to arrange nodes from left to right.\n\n# Output Format\n\n- Provide the output as a Mermaid code snippet structured for a left-to-right mindmap.\n- Ensure the syntax aligns with Mermaid's requirements for a graph representation.\n\n# Examples\n\n**Input**: 數位行銷 -> 社交媒體, 電子郵件, 內容行銷; 社交媒體 -> 臉書, 推特; 電子郵件 -> 活動推廣  \n**Output**:  \n```\ngraph LR  \n    A[數位行銷] --> B[社交媒體]  \n    A --> C[電子郵件]  \n    A --> D[內容行銷]  \n    B --> E[臉書]  \n    B --> F[推特]  \n    C --> G[活動推廣]  \n```\n\n*(Real-world examples should be more complex and include additional subtopics as necessary.)*\n\n# Notes\n\n- Confirm that all graph nodes and labels are in Traditional Chinese.\n- Double-check Mermaid syntax for accuracy to ensure correct rendering. Do not include the ```mermaid code fence in your response.\n- Only include the graph content, starting with 'graph LR'.\n#zh-TW";
 
         let segments = [];
-        if (content.length > 3000) {
-            for (let i = 0; i < content.length; i += 2800) {
-                let end = Math.min(i + 3000, content.length);
+        if (content.length > 5000) {
+            for (let i = 0; i < content.length; i += 4800) {
+                let end = Math.min(i + 5000, content.length);
                 segments.push(content.slice(i, end));
             }
         } else {
@@ -336,9 +336,9 @@ async function generateSummary(content) {
                             #zh-TW`;
 
         let segments = [];
-        if (content.length > 3000) {
-            for (let i = 0; i < content.length; i += 2800) {
-                let end = Math.min(i + 3000, content.length);
+        if (content.length > 5000) {
+            for (let i = 0; i < content.length; i += 4800) {
+                let end = Math.min(i + 5000, content.length);
                 segments.push(content.slice(i, end));
             }
         } else {
@@ -478,7 +478,7 @@ function renderMindmap(mermaidCode) {
             rankSep: 200,
             padding: 10
         },
-        wheelSensitivity: 0.2  // 添加這行來降低縮放靈敏度
+        wheelSensitivity: 0.5  // 添加這行來降低縮放靈敏度
     });
 
     // 設置根節點的樣式
