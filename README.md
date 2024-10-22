@@ -2,23 +2,23 @@
 
 [English Version](#english-version)
 
-這是一個基於 Groq API 的 Chrome 擴充功能，可以自動生成心智圖和文章摘要。
+這是一個基於 Groq 和 OpenAI API 的 Chrome 擴充功能，可以自動生成心智圖和文章摘要。
 
 ## 主要功能
 
 1. 從網頁選取文字並生成心智圖
-2. 上傳 Word、PDF 文件或圖片進行文字識別和心智圖生成
+2. 上傳 Word、PDF、TXT 文件或圖片進行文字識別和心智圖生成
 3. 自動生成文章摘要
 4. 互動式心智圖顯示和編輯
 5. 將心智圖下載為 SVG 格式
 
 ## 特色
 
-- 使用 Groq API 進行自然語言處理和圖像識別
+- 使用 Groq 或 OpenAI API 進行自然語言處理和圖像識別
 - 支援繁體中文
 - 互動式心智圖使用 Cytoscape.js 實現
 - 可自定義 API 金鑰和模型選擇
-- 支援多種文件格式:Word (.docx)、PDF、圖片 (JPG、PNG)
+- 支援多種文件格式:Word (.docx)、PDF、TXT、圖片 (JPG、PNG)
 
 ## 安裝方式
 
@@ -30,7 +30,7 @@
 ## 使用說明
 
 1. 點擊擴充功能圖示開啟彈出視窗
-2. 在設定中輸入您的 Groq API 金鑰
+2. 在設定中輸入您的 Groq 或 OpenAI API 金鑰
 3. 使用「擷取內容」按鈕選取網頁文字，或使用「上傳檔案」按鈕上傳文件
 4. 等待心智圖和摘要生成
 5. 使用互動式介面查看和編輯心智圖
@@ -38,7 +38,7 @@
 
 ## 注意事項
 
-- 使用前請確保已設定有效的 Groq API 金鑰
+- 使用前請確保已設定有效的 Groq 或 OpenAI API 金鑰
 - 大型文件處理可能需要較長時間，請耐心等待
 - 圖片識別功能僅支援 JPG 和 PNG 格式
 
@@ -46,23 +46,23 @@
 
 # English Version
 
-This is a Chrome extension based on the Groq API that automatically generates mind maps and article summaries.
+This is a Chrome extension based on the Groq or OpenAI API that automatically generates mind maps and article summaries.
 
 ## Main Features
 
 1. Generate mind maps from selected text on web pages
-2. Upload Word, PDF documents, or images for text recognition and mind map generation
+2. Upload Word, PDF, TXT documents, or images for text recognition and mind map generation
 3. Automatic article summary generation
 4. Interactive mind map display and editing
 5. Download mind maps in SVG format
 
 ## Highlights
 
-- Uses Groq API for natural language processing and image recognition
+- Uses Groq or OpenAI API for natural language processing and image recognition
 - Supports Traditional Chinese
 - Interactive mind maps implemented using Cytoscape.js
 - Customizable API key and model selection
-- Supports multiple file formats: Word (.docx), PDF, images (JPG, PNG)
+- Supports multiple file formats: Word (.docx), PDF, TXT, images (JPG, PNG)
 
 ## Installation
 
@@ -82,6 +82,6 @@ This is a Chrome extension based on the Groq API that automatically generates mi
 
 ## Notes
 
-- Ensure you have set a valid Groq API key before use
+- Ensure you have set a valid Groq or OpenAI API key before use
 - Processing large documents may take longer, please be patient
 - Image recognition feature only supports JPG and PNG formats
