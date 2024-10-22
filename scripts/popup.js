@@ -208,6 +208,7 @@ document.addEventListener('DOMContentLoaded', function() {
     userInput = document.getElementById('userInput');
     generateButton = document.getElementById('generateButton');
     cancelButton = document.getElementById('cancelButton');
+    const charCount = document.getElementById('charCount');
 
     writeButton.addEventListener('click', function() {
         writeContainer.style.display = 'block';
@@ -225,6 +226,11 @@ document.addEventListener('DOMContentLoaded', function() {
     cancelButton.addEventListener('click', function() {
         writeContainer.style.display = 'none';
         userInput.value = '';
+    });
+
+    userInput.addEventListener('input', function() {
+        const cleanText = stripHtmlTags(this.value);
+        charCount.textContent = `${cleanText.length} 字`;
     });
 });
 
@@ -741,3 +747,4 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         // 可以在這裡添加一些視覺反饋，例如顯示一個通知
     }
 });
+

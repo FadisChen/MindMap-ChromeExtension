@@ -103,7 +103,7 @@ function showWordCount(count) {
         wordCountElement = document.createElement('div');
         wordCountElement.style.cssText = `
             position: fixed;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.5);
             color: white;
             padding: 2px 5px;
             font-size: 12px;

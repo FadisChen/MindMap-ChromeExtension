@@ -217,8 +217,6 @@ body {
     color: white;
 }
 
-/* 添加以下樣式到現有的 styles.css 文件中 */
-
 .select-wrapper {
     position: relative;
     display: inline-block;
@@ -271,4 +269,31 @@ body {
     outline: none;
     border-color: #1a73e8;
     box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+#charCount {
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+
+#userInput {
+    padding-bottom: 25px;
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+}
+
+#userInput::-webkit-scrollbar {
+    width: 8px;
+}
+#userInput::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+#userInput::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+#userInput::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }

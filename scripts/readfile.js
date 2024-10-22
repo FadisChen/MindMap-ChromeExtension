@@ -1,5 +1,6 @@
 const dropZone = document.getElementById('drop-zone');
 const output = document.getElementById('output');
+const charCount = document.getElementById('charCount');
 
 // 添加錯誤處理
 window.onerror = function(message, source, lineno, colno, error) {
@@ -43,8 +44,10 @@ dropZone.addEventListener('drop', (e) => {
         handlePdfFile(file);
     } else if (file.type.startsWith('image/')) {
         handleImageFile(file);
+    } else if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+        handleTxtFile(file);
     } else {
-        output.value = '請上傳 Word (.docx)、PDF 文檔 或 jpg、png 圖片。';
+        output.value = '請上傳 Word (.docx)、PDF、TXT 文檔 或 jpg、png 圖片。';
     }
 });
 
@@ -54,7 +57,9 @@ function handleWordFile(file) {
         const arrayBuffer = loadEvent.target.result;
         mammoth.convertToHtml({ arrayBuffer: arrayBuffer })
             .then(result => {
-                output.value = result.value;
+                const text = stripHtmlTags(result.value);
+                output.value = text;
+                updateCharCount(text);
             })
             .catch(error => {
                 console.error('Word 轉換錯誤:', error);
@@ -77,9 +82,10 @@ function handlePdfFile(file) {
                 console.log('Processing page', i);
                 const page = await pdf.getPage(i);
                 const content = await page.getTextContent();
-                text += content.items.map(item => item.str).join(' ') + '<br><br>';
+                text += content.items.map(item => item.str).join(' ') + '\n\n';
             }
             output.value = text;
+            updateCharCount(text);
             console.log('PDF processing completed');
         } catch (error) {
             console.error('PDF 轉換錯誤:', error);
@@ -96,6 +102,16 @@ function handleImageFile(file) {
         sendToGroqAPI(base64Image);
     };
     reader.readAsDataURL(file);
+}
+
+function handleTxtFile(file) {
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+        const text = loadEvent.target.result;
+        output.value = text;
+        updateCharCount(text);
+    };
+    reader.readAsText(file);
 }
 
 function sendToGroqAPI(base64Image) {
@@ -138,12 +154,24 @@ function sendToGroqAPI(base64Image) {
         .then(data => {
             const result = data.choices[0].message.content.replace("The text in the image includes the following:", "");
             output.value = result;
+            updateCharCount(result);
         })
         .catch(error => {
-            //console.error('API 請求錯誤:', error);
+            console.error('API 請求錯誤:', error);
             output.value = '圖片處理過程中發生錯誤，請稍後再試。';
         });
     });
+}
+
+function stripHtmlTags(html) {
+    let tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+}
+
+function updateCharCount(text) {
+    const cleanText = stripHtmlTags(text);
+    charCount.textContent = `${cleanText.length} 字`;
 }
 
 // 防止整個文檔的拖放行為
@@ -155,4 +183,9 @@ document.addEventListener('dragover', (e) => {
 document.addEventListener('drop', (e) => {
     e.preventDefault();
     e.stopPropagation();
+});
+
+// 監聽 output 的變化
+output.addEventListener('input', function() {
+    updateCharCount(this.value);
 });
