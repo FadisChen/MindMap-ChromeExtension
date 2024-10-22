@@ -49,6 +49,12 @@ function getApiConfig() {
     };
 }
 
+// 在文件開頭添加這個函數
+function updateCharCount() {
+    const cleanText = stripHtmlTags(userInput.value);
+    charCount.textContent = `${cleanText.length} 字`;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const captureButton = document.getElementById('captureButton');
     const settingsButton = document.getElementById('settingsButton');
@@ -96,13 +102,19 @@ document.addEventListener('DOMContentLoaded', function() {
             currentApi = result.currentApi;
             apiSelector.value = currentApi;
         }
+        
+        // 根據當前 API 設置顯示相應的設置
+        updateApiSettings();
     });
 
     apiSelector.addEventListener('change', function() {
         currentApi = this.value;
         chrome.storage.local.set({currentApi: currentApi});
         console.log("Current API changed to:", currentApi);
-        
+        updateApiSettings();
+    });
+
+    function updateApiSettings() {
         if (currentApi === 'groq') {
             groqSettings.style.display = 'block';
             openaiSettings.style.display = 'none';
@@ -110,15 +122,6 @@ document.addEventListener('DOMContentLoaded', function() {
             groqSettings.style.display = 'none';
             openaiSettings.style.display = 'block';
         }
-    });
-
-    // 初始化設置顯示
-    if (currentApi === 'groq') {
-        groqSettings.style.display = 'block';
-        openaiSettings.style.display = 'none';
-    } else {
-        groqSettings.style.display = 'none';
-        openaiSettings.style.display = 'block';
     }
 
     initializePopup();
@@ -228,10 +231,7 @@ document.addEventListener('DOMContentLoaded', function() {
         userInput.value = '';
     });
 
-    userInput.addEventListener('input', function() {
-        const cleanText = stripHtmlTags(this.value);
-        charCount.textContent = `${cleanText.length} 字`;
-    });
+    userInput.addEventListener('input', updateCharCount);
 });
 
 function initializePopup() {
@@ -267,6 +267,7 @@ async function generateResponse(content) {
         // 確保 content 是乾淨的文本
         content = stripHtmlTags(content);
         document.getElementById('userInput').value = content;
+        updateCharCount();
         if (!groqApiKey && !openaiApiKey) {
             document.getElementById('mindmapContainer').innerHTML = `
             <div style="color: red; padding: 10px; text-align: center;">
@@ -374,6 +375,11 @@ async function generateResponse(content) {
 
             // 保存當前的 mermaid 代碼到 localStorage
             chrome.storage.local.set({mermaidCode: currentMindmap});
+        }
+
+        // 如果生成了多段心智圖，呼叫 LLM 進行最終檢查和調整
+        if (segments.length > 1) {
+            await finalMindmapCheck();
         }
 
         // 在生成心智圖後呼叫生成摘要的函數
@@ -708,7 +714,7 @@ function downloadMindmap() {
 
     // 調整 SVG 的尺寸以容納摘要和心智圖
     const svgElement = svgDoc.documentElement;
-    const totalHeight = summaryHeight + height*1.6 + 50;
+    const totalHeight = summaryHeight + height;
     svgElement.setAttribute("height", totalHeight);
 
     // 將摘要元素添加到 SVG 的頂部
@@ -748,3 +754,79 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     }
 });
 
+// 新增 finalMindmapCheck 函數
+async function finalMindmapCheck() {
+    const currentMindmap = document.getElementById('mermaidCode').value;
+    const systemPrompt = `你是一個專業的心智圖檢查和優化專家。你的任務是檢查Mermaid語法的心智圖，判斷是否需要調整或合併節點，並移除重複節點。請確保最終的心智圖結構清晰、邏輯合理，並且沒有重複或冗餘的信息。
+
+    # 步驟
+    1. 檢查Mermaid語法的正確性。
+    2. 識別並合併相似或重複的節點。
+    3. 調整節點層級和關係，確保邏輯合理。
+    4. 移除冗餘或不必要的節點。
+    5. 確保所有文字仍為繁體中文。
+
+    # 輸出格式
+    - 只輸出優化後的Mermaid語法心智圖代碼。
+    - 不要包含任何解釋或額外的文字。
+    - 確保代碼以 "graph LR" 開始。
+    - 節點名稱固定以[ ]包起來，例如:0_1[A]、0_2[B]等。
+
+    # 注意事項
+    - 保持原有的主要結構和重要信息。
+    - 確保節點ID的唯一性和一致性。
+    - 最終輸出應該是一個完整、優化的心智圖。
+    #zh-TW`;
+
+    const userPrompt = `請檢查並優化以下Mermaid語法的心智圖：
+
+    ${currentMindmap}
+
+    請按照系統提示中的步驟進行檢查和優化，並提供優化後的完整Mermaid代碼。
+    #zh-TW`;
+
+    const apiConfig = getApiConfig()[currentApi];
+
+    try {
+        const response = await fetch(apiConfig.url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiConfig.key}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: apiConfig.model,
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userPrompt }
+                ],
+                temperature: 0.7,
+                max_tokens: 2048,
+                top_p: 1,
+                stream: false,
+                stop: null
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.choices && data.choices.length > 0) {
+            let optimizedMindmap = data.choices[0].message.content.trim();
+            
+            // 移除可能的額外說明文字和代碼塊標記
+            optimizedMindmap = optimizedMindmap.replace(/```mermaid\n?/, '').replace(/```\n?$/, '');
+
+            // 更新 mermaidCode 和渲染優化後的心智圖
+            document.getElementById('mermaidCode').value = optimizedMindmap;
+            renderMindmap(optimizedMindmap);
+
+            // 保存優化後的 mermaid 代碼到 localStorage
+            chrome.storage.local.set({mermaidCode: optimizedMindmap});
+        }
+    } catch (error) {
+        console.error("Error in finalMindmapCheck:", error);
+    }
+}
