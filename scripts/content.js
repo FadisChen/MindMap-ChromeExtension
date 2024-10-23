@@ -84,7 +84,6 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// 新增選取文字時顯示字數的功能
 document.addEventListener('selectionchange', function() {
     const selection = window.getSelection();
     const selectedText = selection.toString().trim();
@@ -99,22 +98,28 @@ document.addEventListener('selectionchange', function() {
 document.addEventListener('mousemove', updateWordCountPosition);
 
 function showWordCount(count) {
-    if (!wordCountElement) {
-        wordCountElement = document.createElement('div');
-        wordCountElement.style.cssText = `
-            position: fixed;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-            padding: 2px 5px;
-            font-size: 12px;
-            border-radius: 3px;
-            z-index: 10001;
-            pointer-events: none;
-        `;
-        document.body.appendChild(wordCountElement);
-    }
-    wordCountElement.textContent = `${count} 字`;
-    wordCountElement.style.display = 'block';
+    chrome.storage.local.get(['maxTokens', 'overlapTokens'], function(result) {
+        const maxTokens = result.maxTokens || 5000;
+        const overlapTokens = result.overlapTokens || 200;
+        const apiCalls = Math.ceil(count / maxTokens);
+
+        if (!wordCountElement) {
+            wordCountElement = document.createElement('div');
+            wordCountElement.style.cssText = `
+                position: fixed;
+                background-color: rgba(0, 0, 0, 0.5);
+                color: white;
+                padding: 2px 5px;
+                font-size: 12px;
+                border-radius: 3px;
+                z-index: 10001;
+                pointer-events: none;
+            `;
+            document.body.appendChild(wordCountElement);
+        }
+        wordCountElement.textContent = `${count} 字 / ${apiCalls} 次`;
+        wordCountElement.style.display = 'block';
+    });
 }
 
 function hideWordCount() {
@@ -141,8 +146,7 @@ function highlightElement(element) {
     element.style.backgroundColor = 'rgba(255, 0, 0, 0.1)';
 
     const cleanText = stripHtmlTags(element.innerHTML);
-    const wordCount = cleanText.trim().length;
-    showWordCount(wordCount);
+    showWordCount(cleanText.trim().length);
 }
 
 function restoreElement(element) {

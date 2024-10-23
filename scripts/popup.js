@@ -2,13 +2,17 @@ let groqApiKey = '';
 let openaiApiKey = '';
 let groqModel = 'gemma2-9b-it';
 let openaiModel = 'gpt-4o-mini';
-let currentApi = 'groq'; // 預設使用 Groq API
+let currentApi = 'groq';
+let maxTokens = 5000; // 默認值
+let overlapTokens = 200; // 默認值
 let scale = 1;
 let isDragging = false;
 let startX, startY;
 
 let cy; // 定義全局 Cytoscape 實例
 let writeButton, writeContainer, userInput, generateButton, cancelButton;
+
+let apiDelay = 3000; // 默認值為 3 秒
 
 function startCapture() {
     chrome.runtime.sendMessage({action: "startCapture"});
@@ -52,7 +56,9 @@ function getApiConfig() {
 // 在文件開頭添加這個函數
 function updateCharCount() {
     const cleanText = stripHtmlTags(userInput.value);
-    charCount.textContent = `${cleanText.length} 字`;
+    const charLength = cleanText.length;
+    const apiCalls = Math.ceil(charLength / maxTokens);
+    charCount.textContent = `${charLength} 字 / ${apiCalls} 次`;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -73,11 +79,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const editButton = document.getElementById('editButton');
     const groqSettings = document.getElementById('groqSettings');
     const openaiSettings = document.getElementById('openaiSettings');
+    const maxTokensInput = document.getElementById('maxTokensInput');
+    const overlapTokensInput = document.getElementById('overlapTokensInput');
+    const maxTokensValue = document.getElementById('maxTokensValue');
+    const overlapTokensValue = document.getElementById('overlapTokensValue');
+    const apiDelayInput = document.getElementById('apiDelayInput');
+    const apiDelayValue = document.getElementById('apiDelayValue');
 
     //mermaid.initialize({ startOnLoad: true });
 
     // 載入設置
-    chrome.storage.local.get(['groqApiKey', 'openaiApiKey', 'groqModel', 'openaiModel', 'currentApi'], function(result) {
+    chrome.storage.local.get(['groqApiKey', 'openaiApiKey', 'groqModel', 'openaiModel', 'currentApi', 'maxTokens', 'overlapTokens', 'apiDelay'], function(result) {
         if (result.groqApiKey) {
             groqApiKey = result.groqApiKey;
             groqApiKeyInput.value = groqApiKey;
@@ -101,6 +113,27 @@ document.addEventListener('DOMContentLoaded', function() {
         if (result.currentApi) {
             currentApi = result.currentApi;
             apiSelector.value = currentApi;
+        }
+        if (result.maxTokens) {
+            maxTokens = result.maxTokens;
+            maxTokensInput.value = maxTokens;
+            maxTokensValue.textContent = maxTokens + " 字";
+        } else {
+            maxTokensValue.textContent = maxTokens + " 字"; // 設置默認值
+        }
+        if (result.overlapTokens) {
+            overlapTokens = result.overlapTokens;
+            overlapTokensInput.value = overlapTokens;
+            overlapTokensValue.textContent = overlapTokens + " 字";
+        } else {
+            overlapTokensValue.textContent = overlapTokens + " 字"; // 設置默認值
+        }
+        if (result.apiDelay !== undefined) {
+            apiDelay = result.apiDelay;
+            apiDelayInput.value = apiDelay / 1000;
+            apiDelayValue.textContent = apiDelay / 1000 + " 秒";
+        } else {
+            apiDelayValue.textContent = apiDelay / 1000 + " 秒"; // 設置默認值
         }
         
         // 根據當前 API 設置顯示相應的設置
@@ -148,11 +181,17 @@ document.addEventListener('DOMContentLoaded', function() {
         openaiApiKey = openaiApiKeyInput.value;
         groqModel = groqModelInput.value;
         openaiModel = openaiModelInput.value;
+        maxTokens = parseInt(maxTokensInput.value) || 5000;
+        overlapTokens = parseInt(overlapTokensInput.value) || 200;
+        apiDelay = parseInt(apiDelayInput.value) * 1000;
         chrome.storage.local.set({
             groqApiKey: groqApiKey, 
             openaiApiKey: openaiApiKey, 
             groqModel: groqModel, 
-            openaiModel: openaiModel
+            openaiModel: openaiModel,
+            maxTokens: maxTokens,
+            overlapTokens: overlapTokens,
+            apiDelay: apiDelay
         }, function() {
             settingsContainer.style.display = 'none';
         });
@@ -232,6 +271,25 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     userInput.addEventListener('input', updateCharCount);
+
+    // 添加滑動條的事件監聽器
+    maxTokensInput.addEventListener('input', function() {
+        maxTokens = parseInt(this.value);
+        maxTokensValue.textContent = maxTokens + " 字";
+        updateCharCount();
+    });
+
+    overlapTokensInput.addEventListener('input', function() {
+        overlapTokens = parseInt(this.value);
+        overlapTokensValue.textContent = overlapTokens + " 字";
+        updateCharCount();
+    });
+
+    // 添加 API 延遲滑動條的事件監聽器
+    apiDelayInput.addEventListener('input', function() {
+        apiDelay = parseInt(this.value) * 1000;
+        apiDelayValue.textContent = this.value + " 秒";
+    });
 });
 
 function initializePopup() {
@@ -279,9 +337,9 @@ async function generateResponse(content) {
         const systemPrompt = "Generate a mindmap in Mermaid syntax based on user input. The mindmap should follow a left-to-right (LR) flow and be displayed in Traditional Chinese.\n\n# Steps\n\n1. **Understand User Input**: Parse and comprehend the user's input to determine the main topics and subtopics for the mindmap.\n2. **Structure the Mindmap**: Organize the input into a hierarchy that represents a mindmap, identifying connections between nodes.\n3. **Translate Elements**: Ensure that all elements are translated into Traditional Chinese, if they are not already.\n4. **Format in Mermaid Syntax**: Use the Mermaid syntax for creating a graph with \"graph LR\" to arrange nodes from left to right.\n\n# Output Format\n\n- Provide the output as a Mermaid code snippet structured for a left-to-right mindmap.\n- Ensure the syntax aligns with Mermaid's requirements for a graph representation.\n\n# Examples\n\n**Input**: 數位行銷 -> 社交媒體, 電子郵件, 內容行銷; 社交媒體 -> 臉書, 推特; 電子郵件 -> 活動推廣  \n**Output**:  \n```\ngraph LR  \n    A[數位行銷] --> B[社交媒體]  \n    A --> C[電子郵件]  \n    A --> D[內容行銷]  \n    B --> E[臉書]  \n    B --> F[推特]  \n    C --> G[活動推廣]  \n```\n\n*(Real-world examples should be more complex and include additional subtopics as necessary.)*\n\n# Notes\n\n- Confirm that all graph nodes and labels are in Traditional Chinese.\n- Double-check Mermaid syntax for accuracy to ensure correct rendering. Do not include the ```mermaid code fence in your response.\n- Only include the graph content, starting with 'graph LR'.\n#zh-TW";
 
         let segments = [];
-        if (content.length > 5000) {
-            for (let i = 0; i < content.length; i += 4800) {
-                let end = Math.min(i + 5000, content.length);
+        if (content.length > maxTokens) {
+            for (let i = 0; i < content.length; i += maxTokens - overlapTokens) {
+                let end = Math.min(i + maxTokens, content.length);
                 segments.push(content.slice(i, end));
             }
         } else {
@@ -325,6 +383,10 @@ async function generateResponse(content) {
             #zh-TW`;
 
             const apiConfig = getApiConfig()[currentApi];
+
+            if (i > 0) {
+                await new Promise(resolve => setTimeout(resolve, apiDelay));
+            }
 
             const response = await fetch(apiConfig.url, {
                 method: 'POST',
@@ -422,9 +484,9 @@ async function generateSummary(content) {
                             #zh-TW`;
 
         let segments = [];
-        if (content.length > 5000) {
-            for (let i = 0; i < content.length; i += 4800) {
-                let end = Math.min(i + 5000, content.length);
+        if (content.length > maxTokens) {
+            for (let i = 0; i < content.length; i += maxTokens - overlapTokens) {
+                let end = Math.min(i + maxTokens, content.length);
                 segments.push(content.slice(i, end));
             }
         } else {
@@ -432,11 +494,15 @@ async function generateSummary(content) {
         }
 
         let allSummaries = [];
+        const apiConfig = getApiConfig()[currentApi];
+
         for (let i = 0; i < segments.length; i++) {
             const segment = segments[i];
             let userPrompt = "請為以下內容<context>生成繁體中文摘要：\n\n<context>\n\n" + segment + "\n\n</context>\n\n#zh-TW";
 
-            const apiConfig = getApiConfig()[currentApi];
+            if (i > 0) {
+                await new Promise(resolve => setTimeout(resolve, apiDelay));
+            }
 
             const response = await fetch(apiConfig.url, {
                 method: 'POST',
@@ -468,55 +534,62 @@ async function generateSummary(content) {
             }
         }
 
-        // 生成最終摘要
-        const finalUserPrompt = "請根據以下摘要內容生成一份完整的摘要，捕捉所有重要信息：\n\n" + allSummaries.join("\n\n") + "\n\n請確保最終摘要在150至250字之間。#zh-TW";
+        let finalSummary;
 
-        const apiConfig = getApiConfig()[currentApi];
-        
+        // 只有在有多個段落時才進行最終摘要
+        if (allSummaries.length > 1) {
+            const finalUserPrompt = "請根據以下摘要內容生成一份完整的摘要，捕捉所有重要信息：\n\n" + allSummaries.join("\n\n") + "\n\n請確保最終摘要在150至250字之間。#zh-TW";
+
+            await new Promise(resolve => setTimeout(resolve, apiDelay));
+
+            const finalResponse = await fetch(apiConfig.url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiConfig.key}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: apiConfig.model,
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: finalUserPrompt }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 512,
+                    top_p: 1,
+                    stream: false,
+                    stop: null
+                })
+            });
+
+            if (!finalResponse.ok) {
+                throw new Error(`HTTP error! status: ${finalResponse.status}`);
+            }
+
+            const finalData = await finalResponse.json();
+            if (finalData.choices && finalData.choices.length > 0) {
+                finalSummary = finalData.choices[0].message.content.trim();
+            }
+        } else {
+            finalSummary = allSummaries[0];
+        }
+
         // 設置 LLM 類型
         document.getElementById('llmType').textContent = currentApi === 'groq' ? 'Groq' : 'OpenAI';
 
-        const finalResponse = await fetch(apiConfig.url, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiConfig.key}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: apiConfig.model,
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: finalUserPrompt }
-                ],
-                temperature: 0.7,
-                max_tokens: 512,
-                top_p: 1,
-                stream: false,
-                stop: null
-            })
-        });
-
-        if (!finalResponse.ok) {
-            throw new Error(`HTTP error! status: ${finalResponse.status}`);
+        // 顯示摘要容器
+        document.getElementById('summaryContainer').style.display = 'block';
+        
+        // 逐字顯示摘要
+        document.getElementById('summaryText').textContent = '';
+        for (let char of finalSummary) {
+            document.getElementById('summaryText').textContent += char;
+            await delay(50);
         }
 
-        const finalData = await finalResponse.json();
-        if (finalData.choices && finalData.choices.length > 0) {
-            const finalSummary = finalData.choices[0].message.content.trim();
-            
-            // 顯示摘要容器
-            document.getElementById('summaryContainer').style.display = 'block';
-            
-            // 逐字顯示摘要
-            document.getElementById('summaryText').textContent = '';
-            for (let char of finalSummary) {
-                document.getElementById('summaryText').textContent += char;
-                await delay(50);
-            }
+        // 保存當前的摘要到 localStorage
+        chrome.storage.local.set({summary: finalSummary, llmType: currentApi});
 
-            // 保存當前的摘要到 localStorage
-            chrome.storage.local.set({summary: finalSummary, llmType: currentApi});
-        }
     } catch (error) {
         console.error("Error in generateSummary:", error);
         document.getElementById('summaryText').textContent = `生成摘要時發生錯誤：${error.message}。請檢查您的設置並重試。`;
@@ -714,7 +787,7 @@ function downloadMindmap() {
 
     // 調整 SVG 的尺寸以容納摘要和心智圖
     const svgElement = svgDoc.documentElement;
-    const totalHeight = summaryHeight + height;
+    const totalHeight = summaryHeight + height + 100;
     svgElement.setAttribute("height", totalHeight);
 
     // 將摘要元素添加到 SVG 的頂部
@@ -830,3 +903,4 @@ async function finalMindmapCheck() {
         console.error("Error in finalMindmapCheck:", error);
     }
 }
+

@@ -9,8 +9,17 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "generateMindmap") {
     const selectedText = info.selectionText;
-    chrome.storage.local.set({capturedContent: selectedText}, () => {
-      chrome.action.openPopup();
+    chrome.storage.local.get(['maxTokens', 'overlapTokens'], function(result) {
+      const maxTokens = result.maxTokens || 5000;
+      const overlapTokens = result.overlapTokens || 200;
+      const apiCalls = Math.ceil(selectedText.length / (maxTokens - overlapTokens));
+      chrome.storage.local.set({
+        capturedContent: selectedText,
+        capturedContentLength: selectedText.length,
+        capturedContentApiCalls: apiCalls
+      }, () => {
+        chrome.action.openPopup();
+      });
     });
   }
 });

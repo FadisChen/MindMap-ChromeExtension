@@ -170,8 +170,14 @@ function stripHtmlTags(html) {
 }
 
 function updateCharCount(text) {
-    const cleanText = stripHtmlTags(text);
-    charCount.textContent = `${cleanText.length} 字`;
+    chrome.storage.local.get(['maxTokens', 'overlapTokens'], function(result) {
+        const maxTokens = result.maxTokens || 5000;
+        const overlapTokens = result.overlapTokens || 200;
+        const cleanText = stripHtmlTags(text);
+        const charLength = cleanText.length;
+        const apiCalls = Math.ceil(charLength / maxTokens);
+        charCount.textContent = `${charLength} 字 / ${apiCalls} 次`;
+    });
 }
 
 // 防止整個文檔的拖放行為

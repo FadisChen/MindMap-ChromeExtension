@@ -78,19 +78,29 @@ button:hover {
 }
 
 #settingsContainer {
+    display: none;
     margin-bottom: 16px;
+    width: 100%;
 }
 
-#settingsContainer input {
-    width: calc(100% - 16px);
-    margin-bottom: 8px;
+.settings-group {
+    margin-bottom: 16px;
+    width: 100%;
+}
+
+#settingsContainer input,
+#apiSelector {
+    width: 100%;
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
+    box-sizing: border-box;
+    margin-bottom: 8px;
 }
 
 #saveSettings {
     width: 100%;
+    margin-top: 8px;
 }
 
 #mermaidCode {
@@ -296,4 +306,43 @@ body {
 }
 #userInput::-webkit-scrollbar-thumb:hover {
     background: #555;
+}
+
+.slider-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.slider-container label {
+    flex: 0 0 80px;
+}
+
+.slider-container input[type="range"] {
+    flex: 1;
+    margin: 0 10px;
+}
+
+.slider-container span {
+    flex: 0 0 60px;
+    text-align: right;
+}
+
+.select-wrapper,
+#groqSettings,
+#openaiSettings {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+#settingsContainer input,
+#apiSelector {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    margin-bottom: 8px;
 }
