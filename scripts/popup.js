@@ -312,6 +312,40 @@ function initializePopup() {
     });
 }
 
+// 在文件開頭添加這個新函數
+async function callLLMAPI(apiConfig, systemPrompt, userPrompt, maxTokens = 1024) {
+    const response = await fetch(apiConfig.url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiConfig.key}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: apiConfig.model,
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt }
+            ],
+            temperature: 0.7,
+            max_tokens: maxTokens,
+            top_p: 1,
+            stream: false,
+            stop: null
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data.choices || data.choices.length === 0) {
+        throw new Error("No choices in API response");
+    }
+
+    return data.choices[0].message.content.trim();
+}
+
 // 修改 generateResponse 函數
 async function generateResponse(content) {
     try {
@@ -358,7 +392,7 @@ async function generateResponse(content) {
             1. 閱讀並理解上述文章內容，識別主要概念和子概念。
             2. 使用Mermaid語法構建心智圖，以結構化方式展示概念和子概念。
             3. Mermaid代碼中的ID應以"${i}_"開頭，例如"${i}_A"、"${i}_B"等。
-            4. Mermaid代碼中的固定以[ ]包起來，例如[${i}_A]、[${i}_B]等。
+            4. Mermaid代碼中的節點固定以[ ]包起來，例如[${i}_A]、[${i}_B]等。
 
             # Output Format
             - 僅輸出Mermaid語法格式的心智圖代碼。
@@ -388,45 +422,10 @@ async function generateResponse(content) {
                 await new Promise(resolve => setTimeout(resolve, apiDelay));
             }
 
-            const response = await fetch(apiConfig.url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiConfig.key}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: apiConfig.model,
-                    messages: [
-                        { role: "system", content: systemPrompt },
-                        { role: "user", content: userPrompt }
-                    ],
-                    temperature: 0.7,
-                    max_tokens: 1024,
-                    top_p: 1,
-                    stream: false,
-                    stop: null
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log("API response:", data);
-
-            if (!data.choices || data.choices.length === 0) {
-                throw new Error("No choices in API response");
-            }
-
-            let generatedResponse = data.choices[0].message.content.trim();
-            console.log("Generated response:", generatedResponse);
+            let generatedResponse = await callLLMAPI(apiConfig, systemPrompt, userPrompt);
 
             // 移除可能的額外說明文字和代碼塊標記
-            generatedResponse = generatedResponse.replace(/```mermaid\n?/, '').replace(/```\n?$/, '');
-
-            // 移除所有 "graph LR" 開頭（不僅僅是第一個段落之後的）
-            generatedResponse = generatedResponse.replace(/^graph LR\n?/gm, '');
+            generatedResponse = generatedResponse.replace(/^graph LR\n?/gm, '').replace(/```mermaid\n?/, '').replace(/```\n?$/, '');
 
             allResponses.push(generatedResponse);
 
@@ -504,34 +503,8 @@ async function generateSummary(content) {
                 await new Promise(resolve => setTimeout(resolve, apiDelay));
             }
 
-            const response = await fetch(apiConfig.url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiConfig.key}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: apiConfig.model,
-                    messages: [
-                        { role: "system", content: systemPrompt },
-                        { role: "user", content: userPrompt }
-                    ],
-                    temperature: 0.7,
-                    max_tokens: 512,
-                    top_p: 1,
-                    stream: false,
-                    stop: null
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            if (data.choices && data.choices.length > 0) {
-                allSummaries.push(data.choices[0].message.content.trim());
-            }
+            const summary = await callLLMAPI(apiConfig, systemPrompt, userPrompt, 512);
+            allSummaries.push(summary);
         }
 
         let finalSummary;
@@ -542,34 +515,7 @@ async function generateSummary(content) {
 
             await new Promise(resolve => setTimeout(resolve, apiDelay));
 
-            const finalResponse = await fetch(apiConfig.url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiConfig.key}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: apiConfig.model,
-                    messages: [
-                        { role: "system", content: systemPrompt },
-                        { role: "user", content: finalUserPrompt }
-                    ],
-                    temperature: 0.7,
-                    max_tokens: 512,
-                    top_p: 1,
-                    stream: false,
-                    stop: null
-                })
-            });
-
-            if (!finalResponse.ok) {
-                throw new Error(`HTTP error! status: ${finalResponse.status}`);
-            }
-
-            const finalData = await finalResponse.json();
-            if (finalData.choices && finalData.choices.length > 0) {
-                finalSummary = finalData.choices[0].message.content.trim();
-            }
+            finalSummary = await callLLMAPI(apiConfig, systemPrompt, finalUserPrompt, 512);
         } else {
             finalSummary = allSummaries[0];
         }
@@ -827,7 +773,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     }
 });
 
-// 新增 finalMindmapCheck 函數
+// 修改 finalMindmapCheck 函數
 async function finalMindmapCheck() {
     const currentMindmap = document.getElementById('mermaidCode').value;
     const systemPrompt = `你是一個專業的心智圖檢查和優化專家。你的任務是檢查Mermaid語法的心智圖，判斷是否需要調整或合併節點，並移除重複節點。請確保最終的心智圖結構清晰、邏輯合理，並且沒有重複或冗餘的信息。
@@ -861,46 +807,18 @@ async function finalMindmapCheck() {
     const apiConfig = getApiConfig()[currentApi];
 
     try {
-        const response = await fetch(apiConfig.url, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiConfig.key}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: apiConfig.model,
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: userPrompt }
-                ],
-                temperature: 0.7,
-                max_tokens: 2048,
-                top_p: 1,
-                stream: false,
-                stop: null
-            })
-        });
+        let optimizedMindmap = await callLLMAPI(apiConfig, systemPrompt, userPrompt, 2048);
+        
+        // 移除可能的額外說明文字和代碼塊標記
+        optimizedMindmap = optimizedMindmap.replace(/```mermaid\n?/, '').replace(/```\n?$/, '');
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        // 更新 mermaidCode 和渲染優化後的心智圖
+        document.getElementById('mermaidCode').value = optimizedMindmap;
+        renderMindmap(optimizedMindmap);
 
-        const data = await response.json();
-        if (data.choices && data.choices.length > 0) {
-            let optimizedMindmap = data.choices[0].message.content.trim();
-            
-            // 移除可能的額外說明文字和代碼塊標記
-            optimizedMindmap = optimizedMindmap.replace(/```mermaid\n?/, '').replace(/```\n?$/, '');
-
-            // 更新 mermaidCode 和渲染優化後的心智圖
-            document.getElementById('mermaidCode').value = optimizedMindmap;
-            renderMindmap(optimizedMindmap);
-
-            // 保存優化後的 mermaid 代碼到 localStorage
-            chrome.storage.local.set({mermaidCode: optimizedMindmap});
-        }
+        // 保存優化後的 mermaid 代碼到 localStorage
+        chrome.storage.local.set({mermaidCode: optimizedMindmap});
     } catch (error) {
         console.error("Error in finalMindmapCheck:", error);
     }
 }
-
