@@ -425,7 +425,7 @@ async function generateResponse(content) {
             let generatedResponse = await callLLMAPI(apiConfig, systemPrompt, userPrompt);
 
             // 移除可能的額外說明文字和代碼塊標記
-            generatedResponse = generatedResponse.replace(/^graph LR\n?/gm, '').replace(/```mermaid\n?/, '').replace(/```\n?$/, '');
+            generatedResponse = generatedResponse.replace(/^graph LR\n?/gm, '').replace(/```mermaid\n?/, '').replace(/```\n?$/, '').replace(/{?/, '[').replace(/}?/, ']');
 
             allResponses.push(generatedResponse);
 
