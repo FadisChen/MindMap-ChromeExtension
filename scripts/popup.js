@@ -392,7 +392,7 @@ async function generateResponse(content) {
             1. 閱讀並理解上述文章內容，識別主要概念和子概念。
             2. 使用Mermaid語法構建心智圖，以結構化方式展示概念和子概念。
             3. Mermaid代碼中的ID應以"${i}_"開頭，例如"${i}_A"、"${i}_B"等。
-            4. Mermaid代碼中的節點內容固定以[ ]包起來，例如 0_A[節點內容1] --> 0_B[節點內容2]。
+            4. Mermaid代碼中的節點內容固定以[ ]包起來，例如 ${i}_A[節點內容1] --> ${i}_B[節點內容2]。
 
             # Output Format
             - 僅輸出Mermaid語法格式的心智圖代碼。
