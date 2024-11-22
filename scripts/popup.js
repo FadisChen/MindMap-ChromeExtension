@@ -17,6 +17,7 @@ let apiDelay = 3000; // 默認值為 3 秒
 let jinaApiKey = '';
 let contentEmbeddings = [];
 let contentChunks = [];
+let qaEnabled = false;
 
 function startCapture() {
     chrome.runtime.sendMessage({action: "startCapture"});
@@ -196,6 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
         overlapTokens = parseInt(overlapTokensInput.value) || 200;
         apiDelay = parseInt(apiDelayInput.value) * 1000;
         jinaApiKey = jinaApiKeyInput.value;
+        qaEnabled = qaEnabledCheckbox.checked;
         chrome.storage.local.set({
             groqApiKey: groqApiKey, 
             openaiApiKey: openaiApiKey, 
@@ -204,7 +206,8 @@ document.addEventListener('DOMContentLoaded', function() {
             maxTokens: maxTokens,
             overlapTokens: overlapTokens,
             apiDelay: apiDelay,
-            jinaApiKey: jinaApiKey
+            jinaApiKey: jinaApiKey,
+            qaEnabled: qaEnabled 
         }, function() {
             settingsContainer.style.display = 'none';
         });
@@ -412,8 +415,12 @@ async function generateResponse(content) {
         // 生成 embeddings
         contentEmbeddings = await getEmbeddings(contentChunks);
 
-        // 顯示問答區域
-        document.getElementById('qaContainer').style.display = 'block';
+        // 根據設定決定是否顯示問答區域
+        if (qaEnabled && jinaApiKey) {
+            document.getElementById('qaContainer').style.display = 'block';
+        } else {
+            document.getElementById('qaContainer').style.display = 'none';
+        }
         
         let segments = [];
         if (content.length > maxTokens) {
