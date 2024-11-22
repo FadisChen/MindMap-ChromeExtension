@@ -14,6 +14,10 @@ let writeButton, writeContainer, userInput, generateButton, cancelButton;
 
 let apiDelay = 3000; // 默認值為 3 秒
 
+let jinaApiKey = '';
+let contentEmbeddings = [];
+let contentChunks = [];
+
 function startCapture() {
     chrome.runtime.sendMessage({action: "startCapture"});
 }
@@ -31,7 +35,7 @@ function handleCapturedContent() {
       // 在這裡使用 stripHtmlTags 函數
       const cleanContent = stripHtmlTags(result.capturedContent);
       generateResponse(cleanContent);
-      // 清除存儲的內容,以便下次使用
+      // 清除存儲的內容,以便下次使
       chrome.storage.local.remove('capturedContent');
     }
   });
@@ -86,10 +90,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const apiDelayInput = document.getElementById('apiDelayInput');
     const apiDelayValue = document.getElementById('apiDelayValue');
 
+    const jinaApiKeyInput = document.getElementById('jinaApiKeyInput');
+    const questionInput = document.getElementById('questionInput');
+    
     //mermaid.initialize({ startOnLoad: true });
 
     // 載入設置
-    chrome.storage.local.get(['groqApiKey', 'openaiApiKey', 'groqModel', 'openaiModel', 'currentApi', 'maxTokens', 'overlapTokens', 'apiDelay'], function(result) {
+    chrome.storage.local.get(['groqApiKey', 'openaiApiKey', 'groqModel', 'openaiModel', 'currentApi', 'maxTokens', 'overlapTokens', 'apiDelay', 'jinaApiKey'], function(result) {
         if (result.groqApiKey) {
             groqApiKey = result.groqApiKey;
             groqApiKeyInput.value = groqApiKey;
@@ -134,6 +141,10 @@ document.addEventListener('DOMContentLoaded', function() {
             apiDelayValue.textContent = apiDelay / 1000 + " 秒";
         } else {
             apiDelayValue.textContent = apiDelay / 1000 + " 秒"; // 設置默認值
+        }
+        if (result.jinaApiKey) {
+            jinaApiKey = result.jinaApiKey;
+            jinaApiKeyInput.value = jinaApiKey;
         }
         
         // 根據當前 API 設置顯示相應的設置
@@ -184,6 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
         maxTokens = parseInt(maxTokensInput.value) || 5000;
         overlapTokens = parseInt(overlapTokensInput.value) || 200;
         apiDelay = parseInt(apiDelayInput.value) * 1000;
+        jinaApiKey = jinaApiKeyInput.value;
         chrome.storage.local.set({
             groqApiKey: groqApiKey, 
             openaiApiKey: openaiApiKey, 
@@ -191,7 +203,8 @@ document.addEventListener('DOMContentLoaded', function() {
             openaiModel: openaiModel,
             maxTokens: maxTokens,
             overlapTokens: overlapTokens,
-            apiDelay: apiDelay
+            apiDelay: apiDelay,
+            jinaApiKey: jinaApiKey
         }, function() {
             settingsContainer.style.display = 'none';
         });
@@ -290,6 +303,29 @@ document.addEventListener('DOMContentLoaded', function() {
         apiDelay = parseInt(this.value) * 1000;
         apiDelayValue.textContent = this.value + " 秒";
     });
+
+    // 載入 Jina API Key
+    chrome.storage.local.get(['jinaApiKey'], function(result) {
+        if (result.jinaApiKey) {
+            jinaApiKey = result.jinaApiKey;
+            jinaApiKeyInput.value = jinaApiKey;
+        }
+    });
+    
+    // 添加 questionInput 的 keypress 事件監聽
+    questionInput.addEventListener('keypress', async function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault(); // 防止預設的換行行為
+            const question = this.value.trim();
+            if (question && contentEmbeddings.length > 0) {
+                await handleQuestion(question);
+                this.value = '';
+            } else {
+                document.getElementById('answerText').textContent = '請先生成心智圖並確保已設定 Jina AI API Key';
+                document.getElementById('answerContainer').style.display = 'block';
+            }
+        }
+    });
 });
 
 function initializePopup() {
@@ -313,7 +349,7 @@ function initializePopup() {
 }
 
 // 在文件開頭添加這個新函數
-async function callLLMAPI(apiConfig, systemPrompt, userPrompt, maxTokens = 1024) {
+async function callLLMAPI(apiConfig, systemPrompt, userPrompt, maxTokens = 1024, model=apiConfig.model) {
     const response = await fetch(apiConfig.url, {
         method: 'POST',
         headers: {
@@ -321,7 +357,7 @@ async function callLLMAPI(apiConfig, systemPrompt, userPrompt, maxTokens = 1024)
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            model: apiConfig.model,
+            model: model,
             messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userPrompt }
@@ -370,6 +406,15 @@ async function generateResponse(content) {
 
         const systemPrompt = "Generate a mindmap in Mermaid syntax based on user input. The mindmap should follow a left-to-right (LR) flow and be displayed in Traditional Chinese.\n\n# Steps\n\n1. **Understand User Input**: Parse and comprehend the user's input to determine the main topics and subtopics for the mindmap.\n2. **Structure the Mindmap**: Organize the input into a hierarchy that represents a mindmap, identifying connections between nodes.\n3. **Translate Elements**: Ensure that all elements are translated into Traditional Chinese, if they are not already.\n4. **Format in Mermaid Syntax**: Use the Mermaid syntax for creating a graph with \"graph LR\" to arrange nodes from left to right.\n\n# Output Format\n\n- Provide the output as a Mermaid code snippet structured for a left-to-right mindmap.\n- Ensure the syntax aligns with Mermaid's requirements for a graph representation.\n\n# Examples\n\n**Input**: 數位行銷 -> 社交媒體, 電子郵件, 內容行銷; 社交媒體 -> 臉書, 推特; 電子郵件 -> 活動推廣  \n**Output**:  \n```\ngraph LR  \n    A[數位行銷] --> B[社交媒體]  \n    A --> C[電子郵件]  \n    A --> D[內容行銷]  \n    B --> E[臉書]  \n    B --> F[推特]  \n    C --> G[活動推廣]  \n```\n\n*(Real-world examples should be more complex and include additional subtopics as necessary.)*\n\n# Notes\n\n- Confirm that all graph nodes and labels are in Traditional Chinese.\n- Double-check Mermaid syntax for accuracy to ensure correct rendering. Do not include the ```mermaid code fence in your response.\n- Only include the graph content, starting with 'graph LR'.\n#zh-TW";
 
+        // 分割文本
+        contentChunks = splitText(content);
+
+        // 生成 embeddings
+        contentEmbeddings = await getEmbeddings(contentChunks);
+
+        // 顯示問答區域
+        document.getElementById('qaContainer').style.display = 'block';
+        
         let segments = [];
         if (content.length > maxTokens) {
             for (let i = 0; i < content.length; i += maxTokens - overlapTokens) {
@@ -821,4 +866,237 @@ async function finalMindmapCheck() {
     } catch (error) {
         console.error("Error in finalMindmapCheck:", error);
     }
+}
+
+// 添加文本分割函數
+function splitText(text, maxLength = 1000, overlap = 200) {
+    const paragraphs = text.split('\n');
+    const chunks = [];
+    let currentChunk = "";
+    
+    for (const para of paragraphs) {
+        const trimmedPara = para.trim();
+        if (!trimmedPara) continue;
+        
+        if (currentChunk.length + trimmedPara.length < maxLength) {
+            currentChunk += trimmedPara + " ";
+        } else {
+            if (currentChunk) {
+                chunks.push(currentChunk.trim());
+                currentChunk = currentChunk.slice(-overlap) + trimmedPara + " ";
+            } else {
+                currentChunk = trimmedPara + " ";
+            }
+        }
+    }
+    
+    if (currentChunk) {
+        chunks.push(currentChunk.trim());
+    }
+    
+    return chunks;
+}
+
+// 修改 getEmbeddings 函數
+async function getEmbeddings(texts, batchSize = 20) {
+    if (!jinaApiKey) {
+        throw new Error('Jina AI API Key 未設置');
+    }
+    
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${jinaApiKey}`
+    };
+    
+    const allEmbeddings = [];
+    
+    for (let i = 0; i < texts.length; i += batchSize) {
+        const batch = texts.slice(i, i + batchSize);
+        
+        // 修改資料格式，將文本包裝成正確的格式
+        const data = {
+            "model": "jina-embeddings-v3",
+            "dimensions": 1024,
+            "normalized": true,
+            "embedding_type": "float",
+            "input": batch.map(text => ({ text }))  // 將每個文本包裝成物件
+        };
+        
+        try {
+            const response = await fetch('https://api.jina.ai/v1/embeddings', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(data)
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`API 請求失敗: ${response.status} - ${errorText}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.error) {
+                throw new Error(result.error);
+            }
+            
+            // 從回應中提取 embedding
+            const batchEmbeddings = result.data.map(item => item.embedding);
+            allEmbeddings.push(...batchEmbeddings);
+            
+        } catch (error) {
+            console.error('獲取 embeddings 時發生錯誤:', error);
+            throw error;
+        }
+    }
+    
+    return allEmbeddings;
+}
+
+// 修改 rerank 函數
+async function rerankResults(query, texts) {
+    if (!jinaApiKey) {
+        throw new Error('Jina AI API Key 未設置');
+    }
+
+    const headers = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${jinaApiKey}`
+    };
+    
+    // 修改請求資料格式，直接使用文本陣列
+    const data = {
+        "model": "jina-reranker-v2-base-multilingual",
+        "query": query,
+        "top_n": 3,
+        "documents": texts  // 直接傳入文本陣列
+    };
+    
+    try {
+        const response = await fetch("https://api.jina.ai/v1/rerank", {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API 請求失敗: ${response.status} - ${errorText}`);
+        }
+        
+        const result = await response.json();
+        
+        // 檢查回應格式
+        if (!result || !Array.isArray(result.results)) {
+            console.error('Unexpected API response:', result);
+            throw new Error('API 回應格式不正確');
+        }
+        
+        // 根據相關性分數和文本多樣性進行過濾
+        const filtered_results = [];
+        const seen_content = new Set();
+        
+        for (const item of result.results) {
+            const text = item.text;  // 直接使用 text 屬性
+            const score = item.score; // 使用 score 屬性
+            
+            // 計算文本的特徵指紋
+            const text_fingerprint = text.split(' ').sort().join(' ');
+            
+            // 如果內容不重複且相關性分數足夠高
+            if (!seen_content.has(text_fingerprint) && score > 0.5) {
+                filtered_results.push({
+                    document: { text },
+                    relevance_score: score
+                });
+                seen_content.add(text_fingerprint);
+            }
+        }
+        
+        // 如果沒有找到任何結果，使用原始文本
+        if (filtered_results.length === 0) {
+            return texts.slice(0, 3).map(text => ({
+                document: { text },
+                relevance_score: 1.0
+            }));
+        }
+        
+        return filtered_results.slice(0, 3); // 返回最終的 3 個結果
+        
+    } catch (error) {
+        console.error('重新排序時發生錯誤:', error);
+        // 如果 rerank 失敗，返回基於原始順序的結果
+        return texts.slice(0, 3).map(text => ({
+            document: { text },
+            relevance_score: 1.0
+        }));
+    }
+}
+
+// 修改 handleQuestion 函數，加入 rerank 功能
+async function handleQuestion(question) {
+    try {
+        // 獲取問題的 embedding
+        const questionEmbedding = (await getEmbeddings([question]))[0];
+        
+        // 找到最相關的文本片段
+        const similarities = contentEmbeddings.map((embedding, index) => ({
+            index,
+            similarity: cosineSimilarity(questionEmbedding, embedding)
+        }));
+        
+        // 排序並獲取前15個最相關的片段用於rerank
+        const topResults = similarities
+            .sort((a, b) => b.similarity - a.similarity)
+            .slice(0, 15);
+        
+        // 準備要重新排序的文本
+        const textsToRerank = topResults.map(result => contentChunks[result.index]);
+        
+        // 使用 rerank 進行重新排序
+        const rerankedResults = await rerankResults(question, textsToRerank);
+        
+        if (rerankedResults.length > 0) {
+            // 組合重新排序後的相關文本
+            const context = rerankedResults
+                .map(result => result.document.text)
+                .join('\n\n');
+            
+            // 使用 LLM 生成回答
+            const systemPrompt = `你是一個專業的問答助手。請根據提供的上下文內容，以繁體中文回答用戶的問題。
+            如果上下文中沒有足夠的資訊來回答問題，請誠實說明。
+            回答應該簡潔明瞭，並且直接針對問題給出答案。
+            #zh-TW`;
+
+            const userPrompt = `根據以下內容以繁體中文回答問題：\n\n
+            內容：\n
+            ${context}\n\n
+            問題：\n${question}\n\n
+            請以繁體中文提供準確且相關的回答。
+            #zh-TW`;
+
+            const apiConfig = getApiConfig()[currentApi];
+            const answer = await callLLMAPI(apiConfig, systemPrompt, userPrompt, 1024, "llama-3.2-90b-vision-preview");
+            
+            // 顯示回答
+            document.getElementById('answerText').textContent = answer;
+            document.getElementById('answerContainer').style.display = 'block';
+        } else {
+            document.getElementById('answerText').textContent = "無法找到相關的內容來回答您的問題。";
+            document.getElementById('answerContainer').style.display = 'block';
+        }
+        
+    } catch (error) {
+        console.error('處理問題時發生錯誤:', error);
+        document.getElementById('answerText').textContent = `錯誤：${error.message}`;
+        document.getElementById('answerContainer').style.display = 'block';
+    }
+}
+
+// 添加餘弦相似度計算函數
+function cosineSimilarity(a, b) {
+    const dotProduct = a.reduce((sum, val, i) => sum + val * b[i], 0);
+    const normA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
+    const normB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
+    return dotProduct / (normA * normB);
 }
