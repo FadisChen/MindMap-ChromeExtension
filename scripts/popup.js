@@ -97,7 +97,18 @@ document.addEventListener('DOMContentLoaded', function() {
     //mermaid.initialize({ startOnLoad: true });
 
     // 載入設置
-    chrome.storage.local.get(['groqApiKey', 'openaiApiKey', 'groqModel', 'openaiModel', 'currentApi', 'maxTokens', 'overlapTokens', 'apiDelay', 'jinaApiKey'], function(result) {
+    chrome.storage.local.get([
+        'groqApiKey', 
+        'openaiApiKey', 
+        'groqModel', 
+        'openaiModel', 
+        'currentApi', 
+        'maxTokens', 
+        'overlapTokens', 
+        'apiDelay', 
+        'jinaApiKey',
+        'qaEnabled'
+    ], function(result) {
         if (result.groqApiKey) {
             groqApiKey = result.groqApiKey;
             groqApiKeyInput.value = groqApiKey;
@@ -146,6 +157,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (result.jinaApiKey) {
             jinaApiKey = result.jinaApiKey;
             jinaApiKeyInput.value = jinaApiKey;
+        }
+        
+        // 載入 QA 功能開關狀態
+        if (result.qaEnabled !== undefined) {
+            qaEnabled = result.qaEnabled;
+            document.getElementById('qaEnabledCheckbox').checked = qaEnabled;
         }
         
         // 根據當前 API 設置顯示相應的設置
@@ -197,7 +214,8 @@ document.addEventListener('DOMContentLoaded', function() {
         overlapTokens = parseInt(overlapTokensInput.value) || 200;
         apiDelay = parseInt(apiDelayInput.value) * 1000;
         jinaApiKey = jinaApiKeyInput.value;
-        qaEnabled = qaEnabledCheckbox.checked;
+        qaEnabled = document.getElementById('qaEnabledCheckbox').checked;  // 獲取 checkbox 狀態
+        
         chrome.storage.local.set({
             groqApiKey: groqApiKey, 
             openaiApiKey: openaiApiKey, 
@@ -207,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
             overlapTokens: overlapTokens,
             apiDelay: apiDelay,
             jinaApiKey: jinaApiKey,
-            qaEnabled: qaEnabled 
+            qaEnabled: qaEnabled  // 儲存 QA 功能開關狀態
         }, function() {
             settingsContainer.style.display = 'none';
         });
@@ -416,11 +434,13 @@ async function generateResponse(content) {
         contentEmbeddings = await getEmbeddings(contentChunks);
 
         // 根據設定決定是否顯示問答區域
-        if (qaEnabled && jinaApiKey) {
-            document.getElementById('qaContainer').style.display = 'block';
-        } else {
-            document.getElementById('qaContainer').style.display = 'none';
-        }
+        chrome.storage.local.get(['qaEnabled', 'jinaApiKey'], function(result) {
+            if (result.qaEnabled && result.jinaApiKey) {
+                document.getElementById('qaContainer').style.display = 'block';
+            } else {
+                document.getElementById('qaContainer').style.display = 'none';
+            }
+        });
         
         let segments = [];
         if (content.length > maxTokens) {
