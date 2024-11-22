@@ -346,3 +346,44 @@ body {
     box-sizing: border-box;
     margin-bottom: 8px;
 }
+
+/* 問答區域樣式 */
+#qaContainer {
+    margin-top: 20px;
+    padding: 10px;
+    border-top: 1px solid #ccc;
+}
+
+.qa-input-area {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+#questionInput {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#questionInput:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+/* Jina AI 設定區樣式 */
+.settings-group h3 {
+    margin-top: 15px;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+#jinaApiKeyInput {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
