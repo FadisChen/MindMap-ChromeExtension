@@ -1,68 +1,44 @@
 body {
-    font-family: 'Roboto', sans-serif;
-    width: 500px;
-    padding: 8px 16px 16px 16px;
+    font-family: 'Noto Sans TC', sans-serif;
+    width: 100%;
+    height: 100vh;
     margin: 0;
-    background-color: #ffffff;
-    box-sizing: border-box;
-    overflow: hidden;
-}
-
-.container {
-    background-color: #ffffff;
-    border-radius: 8px;
-    padding: 16px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-#apiKeyContainer {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
-#apiKeyInput {
-    flex-grow: 1;
     padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-button {
-    background-color: #1a73e8;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-button:hover {
-    background-color: #1765cc;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-color: #ffffff;
 }
 
 .button-container {
     display: flex;
-    justify-content: space-between;
-    margin: 4px 0;
-    padding: 0 4px;
+    gap: 8px;
+    margin: 0 0 8px 0;
+    padding: 8px 0;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 100;
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .emoji-button {
     background: none;
     border: none;
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
-    padding: 2px;
-    width: 28px;
-    height: 28px;
+    padding: 4px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
+    opacity: 0.7;
+    transition: opacity 0.2s;
 }
 
 .emoji-button:hover {
+    opacity: 1;
     background: none;
 }
 
@@ -79,8 +55,11 @@ button:hover {
 
 #settingsContainer {
     display: none;
-    margin-bottom: 16px;
+    margin: 0;
+    padding: 8px;
+    border: 1px solid #f0f0f0;
     width: 100%;
+    background-color: #fafafa;
 }
 
 .settings-group {
@@ -104,20 +83,25 @@ button:hover {
 }
 
 #mermaidCode {
-    width: calc(100% - 16px);
+    width: 100%;
+    max-width: none;
     height: 100px;
     margin: 0 0 8px 0;
     padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    border: 1px solid #f0f0f0;
+    border-radius: 2px;
     resize: none;
+    font-size: 14px;
+    line-height: 1.5;
 }
 
 #mindmapContainer {
     width: 100%;
-    height: 450px;
+    max-width: none;
+    height: 400px;
+    min-height: 300px;
     overflow: hidden;
-    border: 1px solid #ccc;
+    border: 1px solid #f0f0f0;
     border-radius: 4px;
     position: relative;
     margin-bottom: 10px;
@@ -142,10 +126,10 @@ button:hover {
 
 #summaryContainer {
     display: none;
-    margin-top: 10px;
-    padding: 10px;
-    background-color: #f0f0f0;
-    border-radius: 5px;
+    margin-top: 8px;
+    padding: 8px;
+    background-color: #fafafa;
+    border-left: 2px solid #4a4a4a;
 }
 
 #summaryContainer h3 {
@@ -161,21 +145,20 @@ button:hover {
 
 /* 自定義滾動條樣式 */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
+    background: #fafafa;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
+    background: #d1d1d1;
+    border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: #b1b1b1;
 }
 
 body {
@@ -190,19 +173,21 @@ body {
 }
 
 #writeContainer {
-    margin-top: 10px;
+    margin: 8px 0;
+    background-color: #fafafa;
+    border-radius: 2px;
+    border: 1px solid #f0f0f0;
     padding: 10px;
-    background-color: #f0f0f0;
-    border-radius: 5px;
 }
 
 #userInput {
-    width: 436px;
+    width: 100%;
+    max-width: none;
     height: 100px;
     margin-bottom: 10px;
     padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
+    border: 1px solid #f0f0f0;
+    border-radius: 2px;
 }
 
 .write-button-container {
@@ -349,9 +334,11 @@ body {
 
 /* 問答區域樣式 */
 #qaContainer {
-    margin-top: 20px;
-    padding: 10px;
-    border-top: 1px solid #ccc;
+    margin-top: 16px;
+    padding: 8px;
+    background-color: #fafafa;
+    border: 1px solid #f0f0f0;
+    border-radius: 2px;
 }
 
 .qa-input-area {
@@ -362,8 +349,8 @@ body {
 #questionInput {
     width: 100%;
     padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    border: 1px solid #f0f0f0;
+    border-radius: 2px;
     font-size: 14px;
 }
 
@@ -375,9 +362,9 @@ body {
 
 /* Jina AI 設定區樣式 */
 .settings-group h3 {
-    margin-top: 15px;
-    margin-bottom: 10px;
-    color: #333;
+    font-size: 14px;
+    color: #4a4a4a;
+    margin: 12px 0 8px 0;
 }
 
 #jinaApiKeyInput {
@@ -405,4 +392,78 @@ body {
     cursor: pointer;
     padding-right: 20px;
     align-items: center;
+}
+
+#scrollTopButton {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    background-color: rgba(74, 74, 74, 0.8);
+    color: white;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1000;
+    font-size: 18px;
+    border: none;
+    padding: 0;
+}
+
+#scrollTopButton:hover {
+    background-color: rgba(51, 51, 51, 0.9);
+}
+
+/* 確保所有容器不會超出側邊欄寬度 */
+.button-container,
+#settingsContainer,
+#writeContainer,
+#mindmapContainer,
+#mermaidCode,
+#summaryContainer,
+#qaContainer {
+    width: calc(100% - 16px);
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+}
+
+/* 調整按鈕容器的 margin */
+.button-container {
+    margin: 0 0 8px 0;
+    padding: 8px 0;
+}
+
+/* 調整輸入框和文本區域的寬度 */
+#userInput,
+#questionInput,
+#mermaidCode,
+textarea {
+    width: 100%;
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+/* 調整設定容器的寬度 */
+#settingsContainer {
+    padding: 8px;
+    margin: 0;
+    width: 100%;
+}
+
+/* 調整滑動條容器的寬度 */
+.slider-container {
+    width: 100%;
+    padding-right: 8px;
+    box-sizing: border-box;
+}
+
+/* 確保心智圖容器不會溢出 */
+#mindmapContainer {
+    width: 100%;
+    margin: 6px 0 10px 0;
 }

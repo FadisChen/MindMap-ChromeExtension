@@ -216,6 +216,9 @@ document.addEventListener('DOMContentLoaded', function() {
         jinaApiKey = jinaApiKeyInput.value;
         qaEnabled = document.getElementById('qaEnabledCheckbox').checked;  // 獲取 checkbox 狀態
         
+        // 添加字數統計設定的儲存
+        const wordCountEnabled = document.getElementById('wordCountEnabledCheckbox').checked;
+        
         chrome.storage.local.set({
             groqApiKey: groqApiKey, 
             openaiApiKey: openaiApiKey, 
@@ -225,8 +228,20 @@ document.addEventListener('DOMContentLoaded', function() {
             overlapTokens: overlapTokens,
             apiDelay: apiDelay,
             jinaApiKey: jinaApiKey,
-            qaEnabled: qaEnabled  // 儲存 QA 功能開關狀態
+            qaEnabled: qaEnabled,  // 儲存 QA 功能開關狀態
+            wordCountEnabled: wordCountEnabled
         }, function() {
+            // 儲存後立即通知所有分頁的 content script
+            chrome.tabs.query({}, function(tabs) {
+                tabs.forEach(tab => {
+                    chrome.tabs.sendMessage(tab.id, {
+                        action: "updateSettings",
+                        settings: { wordCountEnabled: wordCountEnabled }
+                    }).catch(() => {
+                        // 忽略未載入 content script 的分頁錯誤
+                    });
+                });
+            });
             settingsContainer.style.display = 'none';
         });
     });
@@ -236,13 +251,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (tabs[0]) {
                 chrome.scripting.executeScript({
                     target: { tabId: tabs[0].id },
-                    function: startCapture
-                }, (injectionResults) => {
-                    if (chrome.runtime.lastError) {
-                        //console.error("Error executing script:", chrome.runtime.lastError);
-                    } else {
-                        window.close();
+                    function: () => {
+                        // 直接在頁面上下文中執行 startCapture
+                        chrome.runtime.sendMessage({action: "startCapture"});
                     }
+                }).catch(error => {
+                    console.error('執行腳本時發生錯誤:', error);
                 });
             }
         });
@@ -346,6 +360,50 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('answerContainer').style.display = 'block';
             }
         }
+    });
+
+    // 修改回到頂部按鈕功能
+    const scrollTopButton = document.getElementById('scrollTopButton');
+    
+    // 監聽 document 的捲動事件
+    document.addEventListener('scroll', function() {
+        if (document.documentElement.scrollTop > 200) {
+            scrollTopButton.style.display = 'flex';
+        } else {
+            scrollTopButton.style.display = 'none';
+        }
+    });
+    
+    // 點擊回到頂部
+    scrollTopButton.addEventListener('click', function() {
+        document.documentElement.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+
+    // 添加消息監聽器
+    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+        if (request.action === "reloadContent") {
+            handleCapturedContent();
+        } else if (request.action === "captureCancelled") {
+            console.log("Capture cancelled");
+        }
+    });
+
+    // 檢查是否有待處理的內容
+    chrome.storage.local.get(['captureStatus'], function(result) {
+        if (result.captureStatus === "captured") {
+            handleCapturedContent();
+            // 清除狀態
+            chrome.storage.local.remove('captureStatus');
+        }
+    });
+
+    // 載入字數統計設定
+    chrome.storage.local.get(['wordCountEnabled'], function(result) {
+        const wordCountEnabled = result.wordCountEnabled !== undefined ? result.wordCountEnabled : true;
+        document.getElementById('wordCountEnabledCheckbox').checked = wordCountEnabled;
     });
 });
 
@@ -597,13 +655,13 @@ async function generateSummary(content) {
 
         // 顯示摘要容器
         document.getElementById('summaryContainer').style.display = 'block';
-        
+        document.getElementById('summaryText').textContent = finalSummary;
         // 逐字顯示摘要
-        document.getElementById('summaryText').textContent = '';
+        /*document.getElementById('summaryText').textContent = '';
         for (let char of finalSummary) {
             document.getElementById('summaryText').textContent += char;
             await delay(50);
-        }
+        }*/
 
         // 保存當前的摘要到 localStorage
         chrome.storage.local.set({summary: finalSummary, llmType: currentApi});
@@ -665,7 +723,34 @@ function renderMindmap(mermaidCode) {
             rankSep: 200,
             padding: 10
         },
-        wheelSensitivity: 0.5  // 添加這行來降低縮放靈敏度
+        wheelSensitivity: 0.5,
+        // 添加這些設定來修正拖曳問題
+        minZoom: 0.1,
+        maxZoom: 10,
+        panningEnabled: true,
+        userPanningEnabled: true,
+        boxSelectionEnabled: false,
+        selectionType: 'single',
+        touchTapThreshold: 8,
+        desktopTapThreshold: 4,
+        autolock: false,
+        autoungrabify: false,
+        autounselectify: false,
+        // 修正拖曳時的位置計算
+        renderer: {
+            containerBoundingBox: function() {
+                const bounds = mindmapContainer.getBoundingClientRect();
+                const scrollTop = window.scrollY || document.documentElement.scrollTop;
+                return {
+                    x1: bounds.left,
+                    y1: bounds.top + scrollTop,
+                    x2: bounds.right,
+                    y2: bounds.bottom + scrollTop,
+                    w: bounds.width,
+                    h: bounds.height
+                };
+            }
+        }
     });
 
     // 設置根節點的樣式

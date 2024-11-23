@@ -60,6 +60,15 @@
                 <label for="qaEnabledCheckbox"><input type="checkbox" id="qaEnabledCheckbox">啟用智慧問答功能</label>
             </div>
         </div>
+        <div class="settings-group">
+            <h3>顯示設定</h3>
+            <div class="setting-item">
+                <label for="wordCountEnabledCheckbox">
+                    <input type="checkbox" id="wordCountEnabledCheckbox">
+                    顯示字數統計
+                </label>
+            </div>
+        </div>
         <button id="saveSettings">保存設置</button>
     </div>
     <div id="qaContainer" style="display: none;">
@@ -89,6 +98,7 @@
         <h3>摘要 (<span id="llmType"></span>)</h3>
         <p id="summaryText"></p>
     </div>
+    <button id="scrollTopButton" title="回到頂部">↑</button>
     <script src="scripts/popup.js"></script>
 </body>
 </html>
