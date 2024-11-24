@@ -1148,6 +1148,7 @@ async function rerankResults(query, texts) {
 // 修改 handleQuestion 函數，加入 rerank 功能
 async function handleQuestion(question) {
     try {
+        document.getElementById('answerText').textContent = "";
         // 獲取問題的 embedding
         const questionEmbedding = (await getEmbeddings([question]))[0];
         

@@ -80,7 +80,7 @@ This is a Chrome extension based on the Groq API and OpenAI API that automatical
 5. Download mind maps with summaries in SVG format
 6. Support manual text input for mind map and summary generation
 7. Support right-click menu to quickly generate mind maps
-8. Provide intelligent question-answering functionality, which can ask questions about the content of the file
+8. Provide intelligent question-answering functionality for document content
 
 ## Highlights
 
@@ -89,13 +89,14 @@ This is a Chrome extension based on the Groq API and OpenAI API that automatical
 - Interactive mind maps implemented using Cytoscape.js
 - Customizable API key and model selection
 - Supports multiple file formats: Word (.docx), PDF, TXT, images (JPG, PNG)
-- Provides real-time character count feature
+- Provides real-time character count feature (toggleable)
 - Supports Jina AI API for text vectorization and similarity search
 - Customizable single-processing character count and overlap character count
 - Adjustable API request delay time
 - Supports mind map node dragging and automatic layout
-- Provides mind map editing mode, which can directly modify Mermaid syntax
-- Supports mind map optimization functionality
+- Provides mind map editing mode with direct Mermaid syntax editing
+- Supports mind map auto-optimization
+- Displays in side panel for better user experience
 
 ## Installation
 
@@ -106,28 +107,28 @@ This is a Chrome extension based on the Groq API and OpenAI API that automatical
 
 ## Usage Instructions
 
-1. Click the extension icon to open the popup window
+1. Click the extension icon to open the side panel
 2. In settings, choose the API type (Groq or OpenAI) and enter the corresponding API key and model name
 3. Use the "Capture Content" button to select text from web pages, use the "Upload File" button to upload documents, or directly input text
 4. Wait for the mind map and summary to generate
 5. Use the interactive interface to view and edit the mind map
 6. Click the "Download" button to save the mind map and summary together as an SVG file
-7. Use the question-answering functionality to ask questions about the content of the file
+7. Use the question-answering functionality to ask questions about the content
 8. Use the right-click menu to directly select text to generate a mind map
 
 ## Advanced Settings
 
-- Adjust the single-processing character count (default 5000 characters) in the settings
+- Adjust the single-processing character count (default 5000 characters) in settings
 - Set the text overlap character count (default 200 characters) to ensure text continuity
 - Adjust the API request delay time (default 3 seconds)
 - Set the Jina AI API key to enable the intelligent question-answering functionality
 - Supports custom Groq and OpenAI model selection
 - Choose whether to enable the intelligent question-answering functionality
+- Toggle character count display feature
 
 ## Notes
 
-- Ensure you have set a valid API key before use
+- Ensure you have set valid API keys before use
 - Processing large documents may take longer, please be patient
 - Image recognition feature only supports JPG and PNG formats
-- When capturing web content, you can press the ESC key to cancel the operation
-- The intelligent question-answering functionality requires a valid Jina AI API key to be enabled to use
+- Intelligent question-answering functionality requires a valid Jina AI API key and must be enabled in settings
