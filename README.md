@@ -29,6 +29,8 @@
 - 支援心智圖節點拖曳和自動布局
 - 提供心智圖編輯模式，可直接修改 Mermaid 語法
 - 支援心智圖自動優化功能
+- 提供兩種工作模式：擷取模式和對話模式
+- 對話模式支援清除對話歷史功能
 
 ## 安裝方式
 
@@ -39,14 +41,18 @@
 
 ## 使用說明
 
+### 擷取模式
 1. 點擊擴充功能圖示開啟側邊欄
 2. 在設定中選擇 API 類型（Groq 或 OpenAI），並輸入相應的 API 金鑰和模型名稱
 3. 使用「擷取內容」按鈕選取網頁文字，或使用「上傳檔案」按鈕上傳文件，或直接輸入文字
 4. 等待心智圖和摘要生成
 5. 使用互動式介面查看和編輯心智圖
 6. 點擊「下載」按鈕將心智圖和摘要一起儲存為 SVG 檔案
-7. 可使用問答功能針對文件內容進行提問
-8. 可透過右鍵選單直接選取文字生成心智圖
+
+### 對話模式
+1. 點擊對話按鈕進入對話模式
+2. 先擷取網頁內容，再針對內容進行提問
+3. 需要時可使用清除按鈕重置對話歷史
 
 ## 進階設定
 
@@ -107,14 +113,18 @@ This is a Chrome extension based on the Groq API and OpenAI API that automatical
 
 ## Usage Instructions
 
+### Capture Mode
 1. Click the extension icon to open the side panel
 2. In settings, choose the API type (Groq or OpenAI) and enter the corresponding API key and model name
 3. Use the "Capture Content" button to select text from web pages, use the "Upload File" button to upload documents, or directly input text
 4. Wait for the mind map and summary to generate
 5. Use the interactive interface to view and edit the mind map
 6. Click the "Download" button to save the mind map and summary together as an SVG file
-7. Use the question-answering functionality to ask questions about the content
-8. Use the right-click menu to directly select text to generate a mind map
+
+### Dialogue Mode
+1. Click the dialogue button to enter dialogue mode
+2. You can also first capture the content of the web page before asking questions about it
+3. You can use the clear button to reset the dialogue history when needed
 
 ## Advanced Settings
 

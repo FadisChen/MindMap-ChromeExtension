@@ -9,6 +9,7 @@ let captureMode = false;
 let originalStyles = new Map();
 let wordCountElement = null;
 let wordCountEnabled = true; // 預設啟用
+let captureType = "normal";
 
 // 在文件開頭添加載入設定
 chrome.storage.local.get(['wordCountEnabled'], function(result) {
@@ -56,9 +57,17 @@ document.addEventListener('click', function(e) {
         e.preventDefault();
         let content = e.target.innerText;
         
-        chrome.storage.local.set({capturedContent: content}, function() {
-            chrome.runtime.sendMessage({action: "contentCaptured"});
-        });
+        // 根據不同的擷取模式發送不同的消息
+        if (captureType === "chat") {
+            chrome.runtime.sendMessage({
+                action: "chatContentCaptured",
+                content: content
+            });
+        } else {
+            chrome.storage.local.set({capturedContent: content}, function() {
+                chrome.runtime.sendMessage({action: "contentCaptured"});
+            });
+        }
         
         captureMode = false;
         document.body.style.cursor = 'default';
@@ -247,6 +256,39 @@ function createCancelButton() {
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request.action === "startCapture") {
         captureMode = true;
+        captureType = "normal";
+        document.body.style.cursor = 'pointer';
+        
+        let notification = document.createElement('div');
+        notification.textContent = '請點擊要擷取的內容';
+        notification.setAttribute('data-capture-ui', 'true'); // 添加標記
+        notification.style.cssText = `
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            z-index: 10000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-select: none;
+        `;
+        document.body.appendChild(notification);
+        
+        const cancelBtn = createCancelButton();
+        
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 5000);
+    } else if (request.action === "startChatCapture") {
+        captureMode = true;
+        captureType = "chat";
         document.body.style.cursor = 'pointer';
         
         let notification = document.createElement('div');

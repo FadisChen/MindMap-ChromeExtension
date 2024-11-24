@@ -13,9 +13,9 @@
 <body>
     <div class="button-container">
         <button id="captureButton" class="emoji-button" title="擷取">👆</button>
+        <button id="chatButton" class="emoji-button" title="對話">💬</button>
         <button id="writeButton" class="emoji-button" title="書寫">✒️</button>
         <button id="fileButton" class="emoji-button" title="上傳">📁</button>
-        <button id="clearButton" class="emoji-button" title="清除">🗑️</button>
         <button id="downloadButton" class="emoji-button" title="下載">💾</button>
         <button id="settingsButton" class="emoji-button" title="設定">⚙️</button>
     </div>
@@ -56,9 +56,6 @@
         <div class="settings-group">
             <h3>Jina AI</h3>
             <input type="password" id="jinaApiKeyInput" placeholder="請輸入 Jina AI API Key">
-            <div class="setting-item" >
-                <label for="qaEnabledCheckbox"><input type="checkbox" id="qaEnabledCheckbox">啟用智慧問答功能</label>
-            </div>
         </div>
         <div class="settings-group">
             <h3>顯示設定</h3>
@@ -71,12 +68,15 @@
         </div>
         <button id="saveSettings">保存設置</button>
     </div>
-    <div id="qaContainer" style="display: none;">
-        <div class="qa-input-area">
-            <input type="text" id="questionInput" placeholder="請輸入您的問題">
+    <div id="chatContainer" style="display: none;">
+        <div class="chat-header">
+            <button id="clearChatButton" class="emoji-button" title="清除對話">🗑️</button>
         </div>
-        <div id="answerContainer" style="display: none;">
-            <p id="answerText"></p>
+        <div id="chatHistory" class="chat-history">
+            <!-- 對話歷史會動態插入這裡 -->
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="請輸入您的問題（按 Enter 送出）">
         </div>
     </div>
     <div id="writeContainer" style="display: none;">
@@ -88,6 +88,9 @@
             <button id="generateButton">產生</button>
             <button id="cancelButton">取消</button>
         </div>
+    </div>
+    <div class="mindmap-controls">
+        <button id="clearButton" class="emoji-button" title="清除">🗑️</button>
     </div>
     <div id="mindmapContainer"></div>
     <textarea id="mermaidCode" placeholder="心智圖 Mermaid Code" style="display: none;"></textarea>

@@ -17,7 +17,10 @@ let apiDelay = 3000; // 默認值為 3 秒
 let jinaApiKey = '';
 let contentEmbeddings = [];
 let contentChunks = [];
-let qaEnabled = false;
+
+// 新增聊天相關變數
+let chatHistory = [];
+let currentChatContent = '';
 
 function startCapture() {
     chrome.runtime.sendMessage({action: "startCapture"});
@@ -90,11 +93,40 @@ document.addEventListener('DOMContentLoaded', function() {
     const overlapTokensValue = document.getElementById('overlapTokensValue');
     const apiDelayInput = document.getElementById('apiDelayInput');
     const apiDelayValue = document.getElementById('apiDelayValue');
-
     const jinaApiKeyInput = document.getElementById('jinaApiKeyInput');
-    const questionInput = document.getElementById('questionInput');
+    const chatButton = document.getElementById('chatButton');
+    const chatInput = document.getElementById('chatInput');
+    const clearChatButton = document.getElementById('clearChatButton');
     
-    //mermaid.initialize({ startOnLoad: true });
+    // 聊天按鈕點擊事件
+    chatButton.addEventListener('click', function() {
+        // 隱藏所有其他容器
+        document.getElementById('mindmapContainer').style.display = 'none';
+        document.getElementById('summaryContainer').style.display = 'none';
+        document.getElementById('writeContainer').style.display = 'none';
+        document.getElementById('settingsContainer').style.display = 'none';
+        document.querySelector('.edit-button-container').style.display = 'none';
+        document.getElementById('mermaidCode').style.display = 'none';
+        document.querySelector('.mindmap-controls').style.display = 'none';  // 隱藏心智圖控制區
+        
+        // 顯示聊天容器
+        document.getElementById('chatContainer').style.display = 'flex';
+        
+        // 開始擷取模式
+        startChatCapture();
+    });
+    
+    // Enter 鍵發送問題
+    chatInput.addEventListener('keypress', async function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            const question = this.value.trim();
+            if (question) {
+                await handleChatQuestion(question);
+                this.value = '';
+            }
+        }
+    });
 
     // 載入設置
     chrome.storage.local.get([
@@ -106,8 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'maxTokens', 
         'overlapTokens', 
         'apiDelay', 
-        'jinaApiKey',
-        'qaEnabled'
+        'jinaApiKey'
     ], function(result) {
         if (result.groqApiKey) {
             groqApiKey = result.groqApiKey;
@@ -159,12 +190,6 @@ document.addEventListener('DOMContentLoaded', function() {
             jinaApiKeyInput.value = jinaApiKey;
         }
         
-        // 載入 QA 功能開關狀態
-        if (result.qaEnabled !== undefined) {
-            qaEnabled = result.qaEnabled;
-            document.getElementById('qaEnabledCheckbox').checked = qaEnabled;
-        }
-        
         // 根據當前 API 設置顯示相應的設置
         updateApiSettings();
     });
@@ -214,9 +239,6 @@ document.addEventListener('DOMContentLoaded', function() {
         overlapTokens = parseInt(overlapTokensInput.value) || 200;
         apiDelay = parseInt(apiDelayInput.value) * 1000;
         jinaApiKey = jinaApiKeyInput.value;
-        qaEnabled = document.getElementById('qaEnabledCheckbox').checked;  // 獲取 checkbox 狀態
-        
-        // 添加字數統計設定的儲存
         const wordCountEnabled = document.getElementById('wordCountEnabledCheckbox').checked;
         
         chrome.storage.local.set({
@@ -228,7 +250,6 @@ document.addEventListener('DOMContentLoaded', function() {
             overlapTokens: overlapTokens,
             apiDelay: apiDelay,
             jinaApiKey: jinaApiKey,
-            qaEnabled: qaEnabled,  // 儲存 QA 功能開關狀態
             wordCountEnabled: wordCountEnabled
         }, function() {
             // 儲存後立即通知所有分頁的 content script
@@ -247,12 +268,23 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     captureButton.addEventListener('click', function() {
+        // 顯示心智圖相關元素
+        document.getElementById('mindmapContainer').style.display = 'block';
+        document.getElementById('summaryContainer').style.display = 'none';  // 先隱藏摘要，等生成後再顯示
+        document.querySelector('.edit-button-container').style.display = 'block';
+        document.querySelector('.mindmap-controls').style.display = 'flex';  // 顯示心智圖控制區
+        
+        // 隱藏其他容器
+        document.getElementById('writeContainer').style.display = 'none';
+        document.getElementById('settingsContainer').style.display = 'none';
+        document.getElementById('chatContainer').style.display = 'none';
+        
+        // 執行擷取功能
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
             if (tabs[0]) {
                 chrome.scripting.executeScript({
                     target: { tabId: tabs[0].id },
                     function: () => {
-                        // 直接在頁面上下文中執行 startCapture
                         chrome.runtime.sendMessage({action: "startCapture"});
                     }
                 }).catch(error => {
@@ -301,6 +333,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const charCount = document.getElementById('charCount');
 
     writeButton.addEventListener('click', function() {
+        document.querySelector('.edit-button-container').style.display = 'block';  // 顯示編輯按鈕容器
         writeContainer.style.display = 'block';
     });
 
@@ -346,21 +379,6 @@ document.addEventListener('DOMContentLoaded', function() {
             jinaApiKeyInput.value = jinaApiKey;
         }
     });
-    
-    // 添加 questionInput 的 keypress 事件監聽
-    questionInput.addEventListener('keypress', async function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault(); // 防止預設的換行行為
-            const question = this.value.trim();
-            if (question && contentEmbeddings.length > 0) {
-                await handleQuestion(question);
-                this.value = '';
-            } else {
-                document.getElementById('answerText').textContent = '請先生成心智圖並確保已設定 Jina AI API Key';
-                document.getElementById('answerContainer').style.display = 'block';
-            }
-        }
-    });
 
     // 修改回到頂部按鈕功能
     const scrollTopButton = document.getElementById('scrollTopButton');
@@ -384,10 +402,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 添加消息監聽器
     chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-        if (request.action === "reloadContent") {
-            handleCapturedContent();
-        } else if (request.action === "captureCancelled") {
-            console.log("Capture cancelled");
+        if (request.action === "chatContentCaptured") {
+            handleChatContent(request.content);
+        } else if (request.action === "reloadContent") {
+            if (request.source !== "chat") {
+                handleCapturedContent();
+            }
         }
     });
 
@@ -404,6 +424,14 @@ document.addEventListener('DOMContentLoaded', function() {
     chrome.storage.local.get(['wordCountEnabled'], function(result) {
         const wordCountEnabled = result.wordCountEnabled !== undefined ? result.wordCountEnabled : true;
         document.getElementById('wordCountEnabledCheckbox').checked = wordCountEnabled;
+    });
+
+    // 添加清除對話歷史按鈕事件
+    clearChatButton.addEventListener('click', function() {
+        chatHistory = [];
+        const chatHistoryElement = document.getElementById('chatHistory');
+        chatHistoryElement.innerHTML = '';
+        addChatMessage("對話歷史已清除", "assistant");
     });
 });
 
@@ -491,15 +519,6 @@ async function generateResponse(content) {
         // 生成 embeddings
         contentEmbeddings = await getEmbeddings(contentChunks);
 
-        // 根據設定決定是否顯示問答區域
-        chrome.storage.local.get(['qaEnabled', 'jinaApiKey'], function(result) {
-            if (result.qaEnabled && result.jinaApiKey) {
-                document.getElementById('qaContainer').style.display = 'block';
-            } else {
-                document.getElementById('qaContainer').style.display = 'none';
-            }
-        });
-        
         let segments = [];
         if (content.length > maxTokens) {
             for (let i = 0; i < content.length; i += maxTokens - overlapTokens) {
@@ -1212,4 +1231,150 @@ function cosineSimilarity(a, b) {
     const normA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
     const normB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
     return dotProduct / (normA * normB);
+}
+
+// 新增聊天相關函數
+async function startChatCapture() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (tabs[0]) {
+            chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
+                function: () => {
+                    // 直接在頁面上下文中執行 startCapture
+                    chrome.runtime.sendMessage({action: "startChatCapture"});
+                }
+            }).catch(error => {
+                console.error('執行腳本時發生錯誤:', error);
+            });
+        }
+    });
+}
+
+async function handleChatContent(content) {
+    try {
+        // 清空聊天歷史
+        chatHistory = [];
+        const chatHistoryElement = document.getElementById('chatHistory');
+        chatHistoryElement.innerHTML = '';
+        
+        // 添加處理中的提示
+        addChatMessage("正在處理文本，請稍候...", "assistant");
+        
+        // 設置當前聊天內容
+        currentChatContent = stripHtmlTags(content);
+        
+        // 切割文本並生成 embeddings
+        contentChunks = splitText(currentChatContent);
+        chatHistoryElement.innerHTML = '';
+        // 更新處理狀態
+        addChatMessage("正在生成文本向量...", "assistant");
+        contentEmbeddings = await getEmbeddings(contentChunks);
+        
+        // 清除處理中的訊息
+        chatHistoryElement.innerHTML = '';
+        
+        // 添加準備完成的訊息
+        addChatMessage("✅ 文本處理完成，您現在可以開始提問了！", "assistant");
+        
+    } catch (error) {
+        console.error('處理聊天內容時發生錯誤:', error);
+        addChatMessage("❌ 處理內容時發生錯誤，請重試", "assistant");
+    }
+}
+
+async function handleChatQuestion(question) {
+    // 檢查是否有選取內容和生成的 embeddings
+    if (!currentChatContent || !contentEmbeddings || contentEmbeddings.length === 0) {
+        addChatMessage("❌ 請先選取要討論的內容", "assistant");
+        return;
+    }
+    
+    // 添加用戶問題到聊天歷史
+    addChatMessage(question, "user");
+    
+    try {
+        // 添加處理中的提示
+        addChatMessage("🤔 正在思考回答...", "assistant");
+        
+        // 獲取問題的 embedding
+        const questionEmbedding = (await getEmbeddings([question]))[0];
+        
+        // 找到相關的文本片段
+        const similarities = contentEmbeddings.map((embedding, index) => ({
+            index,
+            similarity: cosineSimilarity(questionEmbedding, embedding)
+        }));
+        
+        // 排序並獲取前幾個最相關的片段
+        const topResults = similarities
+            .sort((a, b) => b.similarity - a.similarity)
+            .slice(0, 3);
+        
+        const relevantContent = topResults
+            .map(result => contentChunks[result.index])
+            .join('\n\n');
+        
+        // 使用 LLM 生成回答
+        const systemPrompt = `你是一個專業的問答助手。請根據提供的上下文內容，以繁體中文回答用戶的問題。
+        如果上下文中沒有足夠的資訊來回答問題，請誠實說明。
+        回答應該簡潔明瞭，並且直接針對問題給出答案。
+        #zh-TW`;
+
+        const userPrompt = `根據以下內容回答問題：\n\n${relevantContent}\n\n問題：${question}\n\n#zh-TW`;
+        
+        const apiConfig = getApiConfig()[currentApi];
+        const answer = await callLLMAPI(apiConfig, systemPrompt, userPrompt);
+        
+        // 移除處理中的提示
+        const chatHistoryElement = document.getElementById('chatHistory');
+        chatHistoryElement.removeChild(chatHistoryElement.lastChild);
+        
+        // 添加回答
+        addChatMessage(answer, "assistant");
+        
+    } catch (error) {
+        console.error('處理問題時發生錯誤:', error);
+        addChatMessage("❌ 處理問題時發生錯誤，請重試", "assistant");
+    }
+}
+
+function addChatMessage(message, type) {
+    const chatHistoryElement = document.getElementById('chatHistory');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${type}-message`;
+    messageDiv.textContent = message;
+    chatHistoryElement.appendChild(messageDiv);
+    chatHistoryElement.scrollTop = chatHistoryElement.scrollHeight;
+    
+    // 將消息添加到聊天歷史陣列
+    chatHistory.push({
+        type: type,
+        message: message,
+        timestamp: new Date().toISOString()
+    });
+}
+
+// 修改 hideAllContainers 函數
+function hideAllContainers() {
+    const containers = [
+        'writeContainer',
+        'settingsContainer',
+        'chatContainer',
+        'mindmapContainer',
+        'summaryContainer',
+        'mermaidCode'
+    ];
+    
+    containers.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.style.display = 'none';
+        }
+    });
+    
+    // 隱藏編輯按鈕容器
+    const editButtonContainer = document.querySelector('.edit-button-container');
+    if (editButtonContainer) {
+        editButtonContainer.style.display = 'none';
+    }
 }
