@@ -1196,15 +1196,16 @@ async function handleQuestion(question) {
             
             // 使用 LLM 生成回答
             const systemPrompt = `你是一個專業的問答助手。請根據提供的上下文內容，以繁體中文回答用戶的問題。
-            如果上下文中沒有足夠的資訊來回答問題，請誠實說明。
+            如果上下文中沒有足夠的資訊來回答問題，請回答「我無法回答這個問題」。
             回答應該簡潔明瞭，並且直接針對問題給出答案。
+            請勿回答上下文中沒有提供的資訊。
             #zh-TW`;
 
             const userPrompt = `根據以下內容以繁體中文回答問題：\n\n
             內容：\n
             ${context}\n\n
             問題：\n${question}\n\n
-            請以繁體中文提供準確且相關的回答。
+            請以繁體中文提供準確且相關的回答。如果上下文中沒有足夠的資訊來回答問題，請回答「我無法回答這個問題」。請勿回答上下文中沒有提供的資訊。
             #zh-TW`;
 
             const apiConfig = getApiConfig()[currentApi];
