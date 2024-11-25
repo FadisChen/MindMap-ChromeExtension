@@ -19,54 +19,59 @@
         <button id="downloadButton" class="emoji-button" title="下載">💾</button>
         <button id="settingsButton" class="emoji-button" title="設定">⚙️</button>
     </div>
-    <div id="settingsContainer" style="display: none;">
-        <div class="settings-group">
-            <div class="slider-container">
-                <label for="maxTokensInput">單次字數:</label>
-                <input type="range" id="maxTokensInput" min="1000" max="8000" step="100" value="5000">
-                <span id="maxTokensValue">5000 字</span>
-            </div>
-            <div class="slider-container">
-                <label for="overlapTokensInput">重疊字數:</label>
-                <input type="range" id="overlapTokensInput" min="100" max="1000" step="50" value="200">
-                <span id="overlapTokensValue">200 字</span>
-            </div>
-            <div class="slider-container">
-                <label for="apiDelayInput">LLM間隔:</label>
-                <input type="range" id="apiDelayInput" min="0" max="30" step="1" value="3">
-                <span id="apiDelayValue">3 秒</span>
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <div id="settingsContainer">
+                <div class="settings-group">
+                    <div class="slider-container">
+                        <label for="maxTokensInput">單次字數:</label>
+                        <input type="range" id="maxTokensInput" min="1000" max="8000" step="100" value="5000">
+                        <span id="maxTokensValue">5000 字</span>
+                    </div>
+                    <div class="slider-container">
+                        <label for="overlapTokensInput">重疊字數:</label>
+                        <input type="range" id="overlapTokensInput" min="100" max="1000" step="50" value="200">
+                        <span id="overlapTokensValue">200 字</span>
+                    </div>
+                    <div class="slider-container">
+                        <label for="apiDelayInput">LLM間隔:</label>
+                        <input type="range" id="apiDelayInput" min="0" max="30" step="1" value="3">
+                        <span id="apiDelayValue">3 秒</span>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <div class="select-wrapper">
+                        <select id="apiSelector">
+                            <option value="groq">Groq API</option>
+                            <option value="openai">OpenAI API</option>
+                        </select>
+                    </div>
+                    <div id="groqSettings">
+                        <input type="password" id="groqApiKeyInput" placeholder="請輸入 Groq API Key">
+                        <input type="text" id="groqModelInput" placeholder="請輸入 Groq 模型名稱">
+                    </div>
+                    <div id="openaiSettings">
+                        <input type="password" id="openaiApiKeyInput" placeholder="請輸入 OpenAI API Key">
+                        <input type="text" id="openaiModelInput" placeholder="請輸入 OpenAI 模型名稱">
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <h3>Jina AI</h3>
+                    <input type="password" id="jinaApiKeyInput" placeholder="請輸入 Jina AI API Key">
+                </div>
+                <div class="settings-group">
+                    <h3>顯示設定</h3>
+                    <div class="setting-item">
+                        <label for="wordCountEnabledCheckbox">
+                            <input type="checkbox" id="wordCountEnabledCheckbox">
+                            顯示字數統計
+                        </label>
+                    </div>
+                </div>
+                <button id="saveSettings">保存設置</button>
             </div>
         </div>
-        <div class="settings-group">
-            <div class="select-wrapper">
-                <select id="apiSelector">
-                    <option value="groq">Groq API</option>
-                    <option value="openai">OpenAI API</option>
-                </select>
-            </div>
-            <div id="groqSettings">
-                <input type="password" id="groqApiKeyInput" placeholder="請輸入 Groq API Key">
-                <input type="text" id="groqModelInput" placeholder="請輸入 Groq 模型名稱">
-            </div>
-            <div id="openaiSettings">
-                <input type="password" id="openaiApiKeyInput" placeholder="請輸入 OpenAI API Key">
-                <input type="text" id="openaiModelInput" placeholder="請輸入 OpenAI 模型名稱">
-            </div>
-        </div>
-        <div class="settings-group">
-            <h3>Jina AI</h3>
-            <input type="password" id="jinaApiKeyInput" placeholder="請輸入 Jina AI API Key">
-        </div>
-        <div class="settings-group">
-            <h3>顯示設定</h3>
-            <div class="setting-item">
-                <label for="wordCountEnabledCheckbox">
-                    <input type="checkbox" id="wordCountEnabledCheckbox">
-                    顯示字數統計
-                </label>
-            </div>
-        </div>
-        <button id="saveSettings">保存設置</button>
     </div>
     <div id="chatContainer" style="display: none;">
         <div class="chat-header">

@@ -97,6 +97,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatButton = document.getElementById('chatButton');
     const chatInput = document.getElementById('chatInput');
     const clearChatButton = document.getElementById('clearChatButton');
+    const settingsModal = document.getElementById('settingsModal');
+    const closeButton = document.querySelector('.close-button');
     
     // 聊天按鈕點擊事件
     chatButton.addEventListener('click', function() {
@@ -214,7 +216,17 @@ document.addEventListener('DOMContentLoaded', function() {
     initializePopup();
 
     settingsButton.addEventListener('click', function() {
-        settingsContainer.style.display = settingsContainer.style.display === 'none' ? 'block' : 'none';
+        settingsModal.style.display = 'block';
+    });
+
+    closeButton.addEventListener('click', function() {
+        settingsModal.style.display = 'none';
+    });
+
+    window.addEventListener('click', function(event) {
+        if (event.target === settingsModal) {
+            settingsModal.style.display = 'none';
+        }
     });
 
     clearButton.addEventListener('click', function() {
@@ -263,7 +275,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 });
             });
-            settingsContainer.style.display = 'none';
+            settingsModal.style.display = 'none';
         });
     });
 
