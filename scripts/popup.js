@@ -1058,7 +1058,7 @@ async function getEmbeddings(texts, batchSize = 20) {
         
         // 修改資料格式，將文本包裝成正確的格式
         const data = {
-            "model": "jina-embeddings-v3",
+            "model": "jina-clip-v2",
             "dimensions": 1024,
             "normalized": true,
             "embedding_type": "float",
